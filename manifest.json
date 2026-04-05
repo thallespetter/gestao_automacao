@@ -1,0 +1,27 @@
+{
+  "name": "Gestão da Automação – Mina do Andrade",
+  "short_name": "Gestão Auto",
+  "description": "Dashboard de gestão da equipe de Automação, Instrumentação e Redes – ArcelorMittal Mina do Andrade",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0a0c",
+  "theme_color": "#ff6a00",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": []
+}
