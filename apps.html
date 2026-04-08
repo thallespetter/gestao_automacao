@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ff6a00">
+<title>Apps – Automação · Mina do Andrade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Barlow+Condensed:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+:root{
+  --bg:#08080c;--cb:#12121a;--brd:#22222e;
+  --or:#ff6a00;--gn:#00e676;--bl:#00b0ff;
+  --wh:#e8e8f0;--mt:#55556a;
+  --f:'Barlow Condensed',sans-serif;
+  --fh:'Rajdhani',sans-serif;
+  --fm:'Share Tech Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--wh);font-family:var(--f);}
+header{background:#0d0d12;border-bottom:3px solid var(--or);padding:18px 20px 14px;text-align:center;}
+.logo{font-family:var(--fh);font-size:28px;font-weight:700;letter-spacing:3px;}
+.logo span{color:var(--or);}
+.sub{font-family:var(--fm);font-size:11px;color:var(--mt);letter-spacing:2px;margin-top:4px;}
+main{max-width:560px;margin:0 auto;padding:20px 16px 40px;}
+.section-title{font-family:var(--fm);font-size:10px;color:var(--mt);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;text-align:center;}
+
+/* APP CARD */
+.app-card{
+  background:var(--cb);border:2px solid var(--brd);border-radius:14px;
+  padding:18px;margin-bottom:10px;
+  display:flex;gap:14px;align-items:center;
+}
+.app-icon{width:72px;height:72px;border-radius:16px;flex-shrink:0;object-fit:cover;}
+.app-info{flex:1;}
+.app-name{font-family:var(--fh);font-size:22px;font-weight:700;letter-spacing:1px;line-height:1.1;}
+.app-desc{font-family:var(--fm);font-size:11px;color:var(--mt);margin-top:5px;line-height:1.6;}
+.badge{display:inline-block;font-family:var(--fm);font-size:10px;padding:2px 8px;border-radius:3px;margin-top:6px;}
+.b-or{background:#ff6a0022;color:var(--or);border:1px solid #ff6a0044;}
+.b-gn{background:#00e67622;color:var(--gn);border:1px solid #00e67644;}
+
+/* INSTALL BUTTON */
+.btn{
+  display:block;width:100%;text-align:center;text-decoration:none;
+  font-family:var(--fh);font-size:17px;font-weight:700;letter-spacing:1px;
+  padding:14px 20px;border-radius:8px;margin-top:10px;border:none;cursor:pointer;
+  transition:opacity .15s;
+}
+.btn:active{opacity:.82;}
+.btn-or{background:var(--or);color:#000;}
+.btn-gn{background:var(--gn);color:#000;}
+
+/* STEPS */
+.steps{
+  background:#0a0a14;border:1px solid var(--brd);border-radius:10px;
+  padding:14px 16px;margin-top:10px;margin-bottom:20px;
+}
+.steps-title{font-family:var(--fm);font-size:10px;color:var(--mt);letter-spacing:2px;margin-bottom:10px;}
+.step{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;}
+.step:last-child{margin-bottom:0;}
+.step-num{
+  width:24px;height:24px;border-radius:50%;
+  font-family:var(--fh);font-size:14px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;
+}
+.n-or{background:var(--or);color:#000;}
+.n-gn{background:var(--gn);color:#000;}
+.step-txt{font-family:var(--fm);font-size:12px;color:var(--mt);line-height:1.6;}
+.step-txt strong{color:var(--wh);}
+
+.divider{height:1px;background:var(--brd);margin:6px 0 20px;}
+
+/* NOTE */
+.note{
+  background:#0a1020;border:1px solid #1a2a40;border-radius:8px;
+  padding:12px 14px;margin-bottom:20px;
+  font-family:var(--fm);font-size:11px;color:var(--mt);line-height:1.8;
+}
+.note strong{color:var(--bl);}
+
+footer{text-align:center;font-family:var(--fm);font-size:10px;color:var(--mt);padding:20px;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">AUTOMAÇÃO · <span>MINA DO ANDRADE</span></div>
+  <div class="sub">ARCELORMITTAL BRASIL · SUPERVISÃO DE AUTOMAÇÃO</div>
+</header>
+<main>
+  <p class="section-title">Selecione e instale cada app</p>
+
+  <div class="note">
+    <strong>Como instalar:</strong> Clique no botão do app → o app abre →
+    toque em <strong style="color:var(--wh)">⋮ Mais opções</strong> no canto superior direito →
+    <strong style="color:var(--wh)">Adicionar à tela inicial</strong> → Confirme.
+    Repita para cada app.
+  </div>
+
+  <!-- APP 1: GESTÃO DA AUTOMAÇÃO -->
+  <div class="app-card">
+    <img class="app-icon" src="icon-192.png" alt="Gestão">
+    <div class="app-info">
+      <div class="app-name">Gestão da Automação</div>
+      <div class="app-desc">KPIs · IAMO · 5S · EPI · Agenda · Corretivas</div>
+      <span class="badge b-or">SUPERVISÃO · DASHBOARD</span>
+    </div>
+  </div>
+  <a class="btn btn-or" href="index.html" target="_blank" rel="noopener">⚙️ ABRIR APP GESTÃO</a>
+
+  <div class="steps">
+    <div class="steps-title">COMO INSTALAR NO CELULAR</div>
+    <div class="step">
+      <div class="step-num n-or">1</div>
+      <div class="step-txt">Toque em <strong>ABRIR APP GESTÃO</strong> acima</div>
+    </div>
+    <div class="step">
+      <div class="step-num n-or">2</div>
+      <div class="step-txt">No navegador, toque em <strong>⋮</strong> (três pontos) → <strong>Adicionar à tela inicial</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num n-or">3</div>
+      <div class="step-txt">Toque em <strong>Adicionar</strong> para confirmar</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- APP 2: AVALIAÇÃO 5S -->
+  <div class="app-card">
+    <img class="app-icon" src="icon_5s_192.png" alt="5S">
+    <div class="app-info">
+      <div class="app-name">Avaliação 5S</div>
+      <div class="app-desc">Maturidade 0–4 · Bradley · Desvios e NCs</div>
+      <span class="badge b-gn">5S · QUALIDADE</span>
+    </div>
+  </div>
+  <a class="btn btn-gn" href="senso_form_v33.html" target="_blank" rel="noopener">✅ ABRIR APP AVALIAÇÃO 5S</a>
+
+  <div class="steps">
+    <div class="steps-title">COMO INSTALAR NO CELULAR</div>
+    <div class="step">
+      <div class="step-num n-gn">1</div>
+      <div class="step-txt">Toque em <strong>ABRIR APP AVALIAÇÃO 5S</strong> acima</div>
+    </div>
+    <div class="step">
+      <div class="step-num n-gn">2</div>
+      <div class="step-txt">No navegador, toque em <strong>⋮</strong> (três pontos) → <strong>Adicionar à tela inicial</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num n-gn">3</div>
+      <div class="step-txt">Toque em <strong>Adicionar</strong> para confirmar</div>
+    </div>
+  </div>
+
+</main>
+<footer>MINA DO ANDRADE · AUTOMAÇÃO · INSTRUMENTAÇÃO · REDES</footer>
+</body>
+</html>

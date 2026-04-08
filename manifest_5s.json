@@ -1,0 +1,26 @@
+{
+  "name": "Avaliação 5S",
+  "short_name": "Avaliação 5S",
+  "description": "Avaliação de Maturidade 5S – Mina do Andrade",
+  "id": "avaliacao-5s-v1",
+  "start_url": "./senso_form_v33.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#00e676",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "icon_5s_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon_5s_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
