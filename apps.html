@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ff6a00">
+<title>Apps – Automação · Mina do Andrade</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Barlow+Condensed:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+:root{
+  --bg:#08080c; --cb:#12121a; --brd:#22222e;
+  --or:#ff6a00; --gn:#00e676; --bl:#00b0ff;
+  --wh:#e8e8f0; --mt:#55556a;
+  --f:'Barlow Condensed',sans-serif;
+  --fh:'Rajdhani',sans-serif;
+  --fm:'Share Tech Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--wh);font-family:var(--f);}
+
+/* HEADER */
+header{
+  background:#0d0d12;
+  border-bottom:3px solid var(--or);
+  padding:18px 20px 14px;
+  text-align:center;
+}
+.logo{font-family:var(--fh);font-size:28px;font-weight:700;letter-spacing:3px;color:var(--wh);}
+.logo span{color:var(--or);}
+.sub{font-family:var(--fm);font-size:11px;color:var(--mt);letter-spacing:2px;margin-top:4px;}
+
+/* MAIN */
+main{max-width:600px;margin:0 auto;padding:24px 16px 40px;}
+h2{font-family:var(--fm);font-size:11px;color:var(--mt);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;text-align:center;}
+
+/* APP CARD */
+.app-card{
+  background:var(--cb);
+  border:1px solid var(--brd);
+  border-radius:12px;
+  padding:20px;
+  margin-bottom:20px;
+  display:flex;
+  gap:16px;
+  align-items:flex-start;
+  text-decoration:none;
+  color:inherit;
+  transition:border-color .2s, background .2s;
+  cursor:pointer;
+}
+.app-card:active{background:#1a1a28;border-color:var(--or);}
+.app-icon{
+  width:76px;height:76px;border-radius:18px;
+  flex-shrink:0;object-fit:cover;
+  border:2px solid var(--brd);
+}
+.app-icon.placeholder{
+  display:flex;align-items:center;justify-content:center;
+  background:#0a0a14;font-size:36px;
+}
+.app-info{flex:1;min-width:0;}
+.app-name{font-family:var(--fh);font-size:22px;font-weight:700;color:var(--wh);letter-spacing:1px;line-height:1.1;}
+.app-desc{font-family:var(--fm);font-size:11px;color:var(--mt);margin-top:4px;line-height:1.6;}
+.app-badge{
+  display:inline-block;
+  font-family:var(--fm);font-size:10px;
+  padding:2px 8px;border-radius:3px;
+  margin-top:6px;letter-spacing:.5px;
+}
+.badge-or{background:#ff6a0022;color:var(--or);border:1px solid #ff6a0044;}
+.badge-gn{background:#00e67622;color:var(--gn);border:1px solid #00e67644;}
+
+/* INSTALL BTN */
+.install-btn{
+  display:block;width:100%;
+  background:var(--or);border:none;color:#000;
+  font-family:var(--fh);font-size:18px;font-weight:700;
+  padding:13px 20px;border-radius:7px;
+  cursor:pointer;letter-spacing:1px;
+  margin-top:14px;text-align:center;
+  text-decoration:none;transition:opacity .2s;
+}
+.install-btn:active{opacity:.85;}
+.install-btn.gn{background:var(--gn);}
+
+.open-btn{
+  display:block;width:100%;
+  background:transparent;border:1px solid var(--brd);color:var(--mt);
+  font-family:var(--fh);font-size:16px;font-weight:700;
+  padding:10px 20px;border-radius:7px;
+  cursor:pointer;letter-spacing:1px;
+  margin-top:8px;text-align:center;
+  text-decoration:none;transition:border-color .2s, color .2s;
+}
+.open-btn:active{border-color:var(--or);color:var(--or);}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--brd);margin:4px 0 20px;}
+
+/* FOOTER */
+footer{
+  text-align:center;font-family:var(--fm);font-size:10px;color:var(--mt);
+  padding:20px;letter-spacing:1px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">AUTOMAÇÃO · <span>MINA DO ANDRADE</span></div>
+  <div class="sub">ARCELORMITTAL BRASIL · SUPERVISÃO DE AUTOMAÇÃO</div>
+</header>
+
+<main>
+  <h2>Aplicativos disponíveis</h2>
+
+  <!-- APP 1: GESTÃO DA AUTOMAÇÃO -->
+  <div class="app-card">
+    <img class="app-icon" src="icon-192.png" alt="Gestão da Automação" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <div class="app-icon placeholder" style="display:none;">⚙️</div>
+    <div class="app-info">
+      <div class="app-name">Gestão da Automação</div>
+      <div class="app-desc">
+        Dashboard completo da supervisão.<br>
+        KPIs · IAMO · 5S · EPI · Agenda · Corretivas · Validades
+      </div>
+      <span class="app-badge badge-or">SUPERVISÃO</span>
+    </div>
+  </div>
+  <a class="install-btn" href="index.html" id="btnGestao">📲 ABRIR / INSTALAR</a>
+  <div style="font-family:var(--fm);font-size:10px;color:var(--mt);text-align:center;margin-top:6px;line-height:1.6;">
+    Ao abrir, toque em <strong style="color:var(--wh);">"Adicionar à tela inicial"</strong> para instalar como app
+  </div>
+
+  <div class="divider" style="margin-top:20px;"></div>
+
+  <!-- APP 2: AVALIAÇÃO 5S -->
+  <div class="app-card">
+    <img class="app-icon" src="icon_5s_192.png" alt="Avaliação 5S" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <div class="app-icon placeholder" style="display:none;">✅</div>
+    <div class="app-info">
+      <div class="app-name">Avaliação 5S</div>
+      <div class="app-desc">
+        Avaliação de maturidade por área.<br>
+        Escala 0–4 · Cultura de Bradley (DuPont) · Desvios e NCs
+      </div>
+      <span class="app-badge badge-gn">5S · QUALIDADE</span>
+    </div>
+  </div>
+  <a class="install-btn gn" href="senso_form_v33.html" id="btn5S">📲 ABRIR / INSTALAR</a>
+  <div style="font-family:var(--fm);font-size:10px;color:var(--mt);text-align:center;margin-top:6px;line-height:1.6;">
+    Ao abrir, toque em <strong style="color:var(--wh);">"Adicionar à tela inicial"</strong> para instalar como app
+  </div>
+
+</main>
+
+<footer>
+  MINA DO ANDRADE · AUTOMAÇÃO · INSTRUMENTAÇÃO · REDES<br>
+  thallespetter.github.io/gestao_automacao
+</footer>
+
+</body>
+</html>
