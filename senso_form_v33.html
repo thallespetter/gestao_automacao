@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ff6a00">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Avaliação 5S">
+<title>Avaliação 5S – Mina do Andrade</title>
+<link rel="manifest" href="manifest_5s.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#0a0a0c; --brd:#2a2a35; --cb:#13131a;
+  --or:#ff6a00; --or2:#ff9500;
+  --gn:#00e676; --yw:#ffd600; --rd:#ff1744; --bl:#00b0ff; --pu:#aa66ff;
+  --wh:#e8e8f0; --mt:#666680;
+  --f:'Barlow Condensed',sans-serif;
+  --fm:'Share Tech Mono',monospace;
+  --fh:'Rajdhani',sans-serif;
+  /* note colors 0-4 */
+  --c0:#ff1744; --c0bg:#2a0505;
+  --c1:#ff5500; --c1bg:#2a1205;
+  --c2:#ffd600; --c2bg:#2a2005;
+  --c3:#00e676; --c3bg:#052a10;
+  --c4:#00b0ff; --c4bg:#002a3a;
+  /* maturity colors */
+  --m0:#ef4444; --m1:#f97316; --m2:#eab308; --m3:#22c55e; --m4:#06b6d4;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;min-height:100vh;min-height:-webkit-fill-available;background:var(--bg);color:var(--wh);font-family:var(--f);font-size:16px;overscroll-behavior:none;}
+
+/* ── HEADER ── */
+#appHeader{
+  background:#0d0d10;border-bottom:3px solid var(--or);
+  padding:12px 16px 8px;position:sticky;top:0;z-index:100;
+  padding-top:calc(12px + env(safe-area-inset-top));
+}
+.h-row{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.h-title{font-family:var(--fh);font-size:22px;font-weight:700;letter-spacing:2px;text-transform:uppercase;line-height:1;}
+.h-logo{font-family:var(--fm);font-size:10px;color:var(--or);letter-spacing:1px;margin-top:2px;}
+.h-area-row{display:flex;align-items:center;gap:6px;margin-top:4px;min-height:20px;}
+#hArea{font-family:var(--fm);font-size:12px;color:var(--or2);letter-spacing:1px;flex:1;}
+#hDono{font-family:var(--fm);font-size:10px;color:var(--mt);}
+#hBadge{}
+.h-badge{font-family:var(--fm);font-size:10px;padding:2px 8px;border-radius:3px;flex-shrink:0;}
+.h-badge.admin{background:#001a2a;border:1px solid var(--bl);color:var(--bl);}
+.h-badge.oficina{background:#1a0a00;border:1px solid var(--or);color:var(--or);}
+.h-badge.sala{background:#0d001a;border:1px solid var(--pu);color:var(--pu);}
+.prog-wrap{height:4px;background:var(--brd);margin-top:8px;border-radius:2px;}
+#progFill{height:100%;background:var(--or);border-radius:2px;transition:width .3s;width:0%;}
+
+/* ── INSTALL BANNER ── */
+#installBanner{
+  display:none;background:#0f1a0a;border-bottom:1px solid var(--gn);
+  padding:8px 16px;align-items:center;gap:10px;
+}
+#installBanner.show{display:flex;}
+.inst-txt{flex:1;font-family:var(--fm);font-size:11px;color:var(--gn);}
+.inst-btn{background:var(--gn);color:#000;font-family:var(--fh);font-size:13px;font-weight:700;border:none;padding:6px 14px;border-radius:3px;cursor:pointer;}
+.inst-close{background:none;border:none;color:var(--mt);font-size:18px;cursor:pointer;padding:0 4px;}
+
+/* ── FIREBASE STATUS ── */
+#fbStatus{font-family:var(--fm);font-size:11px;padding:6px 12px;text-align:center;display:none;}
+#fbStatus.show{display:block;}
+
+/* ── CONTENT ── */
+#content{padding:12px 16px;max-width:600px;margin:0 auto;padding-bottom:calc(16px + env(safe-area-inset-bottom));}
+
+/* ── STEPS ── */
+.step{display:none;}
+.step.active{display:block;}
+
+/* ── CARDS ── */
+.card{background:var(--cb);border:1px solid var(--brd);border-radius:8px;padding:14px;margin-bottom:10px;}
+.card-title{font-family:var(--fh);font-size:16px;font-weight:700;color:var(--or);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.card-title::before{content:'';width:3px;height:14px;background:var(--or);border-radius:2px;flex-shrink:0;}
+
+/* ── AREA GRID ── */
+.area-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.area-btn{background:#0f0f18;border:2px solid var(--brd);border-radius:6px;padding:12px 10px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s;user-select:none;}
+.area-btn:active{transform:scale(.97);}
+.area-btn:hover,.area-btn:focus{border-color:var(--or);}
+.area-btn.selected{border-color:var(--or);background:#1a0a00;}
+.area-btn-nome{font-family:var(--fh);font-size:15px;font-weight:700;color:#d0d0e0;line-height:1.3;margin-bottom:5px;}
+.area-btn-meta{display:flex;gap:4px;align-items:center;flex-wrap:wrap;}
+.tipo-badge{font-family:var(--fm);font-size:9px;padding:2px 6px;border-radius:2px;}
+.tipo-badge.admin{background:#001a2a;color:var(--bl);}
+.tipo-badge.oficina{background:#1a0a00;color:var(--or);}
+.tipo-badge.sala{background:#0d001a;color:var(--pu);}
+
+/* ── MATURITY INFO BOX ── */
+.mat-info{background:#0a0a10;border:1px solid #2a2a40;border-radius:6px;padding:10px 12px;margin-bottom:12px;}
+.mat-info-title{font-family:var(--fm);font-size:10px;color:var(--mt);letter-spacing:1px;margin-bottom:6px;}
+.mat-row{display:flex;gap:4px;}
+.mat-chip{flex:1;text-align:center;border-radius:4px;padding:4px 2px;}
+.mat-chip-n{font-family:var(--fh);font-size:16px;font-weight:700;}
+.mat-chip-l{font-family:var(--fm);font-size:8px;letter-spacing:.5px;margin-top:1px;}
+.mat0{background:#2a0505;color:var(--m0);}
+.mat1{background:#2a1205;color:var(--m1);}
+.mat2{background:#2a2005;color:var(--m2);}
+.mat3{background:#052a10;color:var(--m3);}
+.mat4{background:#002a3a;color:var(--m4);}
+
+/* ── QUESTION BLOCK ── */
+.perg-block{padding:14px 0;border-bottom:1px solid #1a1a22;}
+.perg-block:last-child{border-bottom:none;}
+.perg-num{font-family:var(--fm);font-size:10px;color:var(--mt);letter-spacing:1px;margin-bottom:4px;}
+.perg-texto{font-size:15px;color:#ccc;line-height:1.5;margin-bottom:12px;}
+
+/* ── NOTE BUTTONS 0-4 ── */
+.nota-labels{display:flex;justify-content:space-between;margin-bottom:5px;}
+.nota-label{font-family:var(--fm);font-size:9px;color:var(--mt);text-align:center;flex:1;}
+.nota-row{display:flex;gap:5px;margin-bottom:8px;}
+.nota-btn{
+  flex:1;background:#0f0f18;border:2px solid #1e1e2a;
+  border-radius:5px;padding:12px 4px;cursor:pointer;
+  font-family:var(--fh);font-size:22px;font-weight:700;
+  color:var(--mt);text-align:center;transition:all .15s;
+  user-select:none;
+}
+.nota-btn:active{transform:scale(.94);}
+/* note 0 */
+.nota-btn.n0.sel{background:var(--c0bg);border-color:var(--c0);color:var(--c0);box-shadow:0 0 8px var(--c0)44;}
+/* note 1 */
+.nota-btn.n1.sel{background:var(--c1bg);border-color:var(--c1);color:var(--c1);box-shadow:0 0 8px var(--c1)44;}
+/* note 2 */
+.nota-btn.n2.sel{background:var(--c2bg);border-color:var(--c2);color:var(--c2);box-shadow:0 0 8px var(--c2)44;}
+/* note 3 */
+.nota-btn.n3.sel{background:var(--c3bg);border-color:var(--c3);color:var(--c3);box-shadow:0 0 8px var(--c3)44;}
+/* note 4 */
+.nota-btn.n4.sel{background:var(--c4bg);border-color:var(--c4);color:var(--c4);box-shadow:0 0 8px var(--c4)44;}
+
+/* NC field */
+.nc-field{display:none;margin-top:6px;animation:fadeIn .2s;}
+.nc-field.show{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+.nc-label{font-family:var(--fm);font-size:10px;color:var(--rd);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.nc-input{width:100%;background:#13131a;border:1px solid var(--rd);color:var(--wh);font-family:var(--f);font-size:14px;padding:9px 10px;border-radius:4px;outline:none;resize:vertical;min-height:60px;}
+.nc-input:focus{border-color:#ff5566;}
+
+/* ── RESP INPUT ── */
+.resp-wrap{background:var(--cb);border:1px solid var(--brd);border-radius:8px;padding:14px;margin-bottom:10px;}
+.resp-label{font-family:var(--fm);font-size:10px;color:var(--mt);letter-spacing:1px;margin-bottom:6px;}
+.resp-input{width:100%;background:#13131a;border:1px solid var(--brd);color:var(--wh);font-family:var(--f);font-size:15px;padding:10px 12px;border-radius:4px;outline:none;}
+.resp-input:focus{border-color:var(--or);}
+
+/* ── BUTTONS ── */
+.btn{background:var(--or);border:none;color:#000;font-family:var(--fh);font-size:17px;font-weight:700;padding:14px 20px;border-radius:5px;cursor:pointer;width:100%;letter-spacing:1px;margin-top:10px;transition:background .2s;}
+.btn:active{background:var(--or2);}
+.btn-sec{background:#13131a;border:1px solid var(--brd);color:var(--mt);font-family:var(--fh);font-size:15px;font-weight:700;padding:12px 20px;border-radius:5px;cursor:pointer;width:100%;letter-spacing:1px;margin-top:8px;}
+.btn-sec:active{border-color:var(--or);color:var(--or);}
+
+/* ── ALERTS ── */
+.alert-box{background:#2a0505;border:1px solid var(--rd);border-radius:4px;padding:10px 12px;font-family:var(--fm);font-size:11px;color:var(--rd);margin-bottom:10px;display:none;}
+.alert-box.show{display:block;}
+
+/* ── SUCCESS SCREEN ── */
+#stepSucesso{text-align:center;}
+.suc-icon{font-size:72px;margin:20px 0 12px;}
+.suc-msg{font-family:var(--fh);font-size:24px;font-weight:700;color:var(--gn);letter-spacing:2px;}
+.suc-nota{font-family:var(--fh);font-size:56px;font-weight:700;margin:14px 0 4px;}
+.suc-pct{font-family:var(--fm);font-size:18px;margin-bottom:8px;}
+.suc-mat-badge{display:inline-block;font-family:var(--fh);font-size:16px;font-weight:700;padding:6px 20px;border-radius:4px;letter-spacing:2px;margin-bottom:10px;}
+.suc-cultura{font-family:var(--fm);font-size:13px;color:var(--mt);margin-bottom:6px;line-height:1.6;}
+.suc-detail{font-family:var(--fm);font-size:12px;color:var(--mt);margin-top:10px;line-height:1.9;}
+.suc-badge{font-family:var(--fm);font-size:10px;padding:3px 12px;border-radius:3px;display:inline-block;margin-top:4px;}
+
+/* ── NC SUMMARY ── */
+.nc-summary{background:#13131a;border:1px solid #2a0505;border-radius:6px;padding:10px 12px;margin-top:12px;text-align:left;}
+.nc-summary-title{font-family:var(--fm);font-size:10px;color:var(--rd);letter-spacing:1px;margin-bottom:6px;}
+.nc-item{font-family:var(--fm);font-size:11px;color:#ccc;padding:3px 0;border-bottom:1px solid #1a1a22;line-height:1.5;}
+.nc-item:last-child{border-bottom:none;}
+.nc-item-q{color:var(--mt);}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:40px 16px;font-family:var(--fm);font-size:12px;color:var(--mt);line-height:1.9;}
+.empty strong{color:var(--or);}
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<!-- INSTALL BANNER -->
+<div id="installBanner">
+  <div class="inst-txt">📲 Instale o Avaliação 5S como app</div>
+  <button class="inst-btn" onclick="instalarApp()">INSTALAR</button>
+  <button class="inst-close" onclick="fecharBanner()">✕</button>
+</div>
+
+<!-- HEADER -->
+<div id="appHeader">
+  <div class="h-row">
+    <div>
+      <div class="h-title">Avaliação 5S</div>
+      <div class="h-logo">ARCELORMITTAL · MINA DO ANDRADE</div>
+    </div>
+    <div id="hBadge"></div>
+  </div>
+  <div class="h-area-row">
+    <div id="hArea"></div>
+    <div id="hDono"></div>
+  </div>
+  <div class="prog-wrap"><div id="progFill"></div></div>
+</div>
+
+<!-- FIREBASE STATUS -->
+<div id="fbStatus"></div>
+
+<!-- CONTENT -->
+<div id="content">
+
+  <!-- STEP 1: AREA SELECTION -->
+  <div id="stepArea" class="step active">
+    <div class="card">
+      <div class="card-title">Selecione a Área</div>
+      <div id="fbStatusArea" style="font-family:var(--fm);font-size:11px;color:var(--mt);margin-bottom:8px;display:none;"></div>
+      <div id="areaGrid" class="area-grid"></div>
+      <div id="areaEmpty" class="empty" style="display:none;">
+        <strong>Nenhuma área cadastrada.</strong><br>
+        Cadastre áreas no app Gestão da Automação<br>→ EDITAR → 5S
+      </div>
+    </div>
+    <div class="card" style="border-color:#1e1e2a;">
+      <div class="card-title">Escala de Maturidade</div>
+      <div class="mat-row" style="margin-bottom:4px;">
+        <div class="mat-chip mat0"><div class="mat-chip-n">0</div><div class="mat-chip-l">Inexistente</div></div>
+        <div class="mat-chip mat1"><div class="mat-chip-n">1</div><div class="mat-chip-l">Fraco</div></div>
+        <div class="mat-chip mat2"><div class="mat-chip-n">2</div><div class="mat-chip-l">Implantando</div></div>
+        <div class="mat-chip mat3"><div class="mat-chip-n">3</div><div class="mat-chip-l">Implantado</div></div>
+        <div class="mat-chip mat4"><div class="mat-chip-n">4</div><div class="mat-chip-l">Excelência</div></div>
+      </div>
+      <div style="font-family:var(--fm);font-size:9px;color:var(--mt);margin-top:6px;line-height:1.6;">
+        Baseada na Cultura de Bradley (DuPont).<br>
+        Cada pergunta é avaliada de 0 a 4.
+      </div>
+    </div>
+    <div id="alertArea" class="alert-box">⚠ Selecione uma área para continuar.</div>
+    <button class="btn" onclick="irParaPerguntas()">INICIAR AVALIAÇÃO →</button>
+  </div>
+
+  <!-- STEP 2: QUESTIONS -->
+  <div id="stepPerguntas" class="step">
+    <div class="card">
+      <div class="card-title" id="pergCardTitle">Perguntas</div>
+      <div id="perguntasContainer"></div>
+    </div>
+    <div class="resp-wrap">
+      <div class="resp-label">AVALIADOR (opcional)</div>
+      <input class="resp-input" id="avalResponsavel" type="text" placeholder="Nome do avaliador…" autocomplete="name">
+    </div>
+    <div class="resp-wrap" style="margin-top:-4px;">
+      <div class="resp-label">DATA DA AVALIAÇÃO</div>
+      <input class="resp-input" id="avalData" type="date">
+    </div>
+    <div id="alertPerguntas" class="alert-box">⚠ Responda todas as perguntas antes de enviar.</div>
+    <button class="btn" onclick="enviarAvaliacao()">ENVIAR AVALIAÇÃO ✓</button>
+    <button class="btn-sec" onclick="voltarArea()">← VOLTAR</button>
+  </div>
+
+  <!-- STEP 3: SUCCESS -->
+  <div id="stepSucesso" class="step">
+    <div class="card">
+      <div class="suc-icon">✅</div>
+      <div class="suc-msg">AVALIAÇÃO CONCLUÍDA</div>
+      <div class="suc-nota" id="sucMatNum">—</div>
+      <div class="suc-pct" id="sucPct" style="color:var(--mt);">—</div>
+      <div class="suc-mat-badge" id="sucMatBadge">—</div>
+      <div class="suc-cultura" id="sucCultura"></div>
+      <div id="sucBadgeArea"></div>
+      <div class="suc-detail" id="sucDetail"></div>
+      <div id="sucNcSummary"></div>
+    </div>
+    <button class="btn" onclick="novaAvaliacao()">NOVA AVALIAÇÃO</button>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+/* ══════════════════════════════════════════════════════
+   AVALIAÇÃO 5S — v33
+   PWA + Firebase + Maturidade Bradley (0–4)
+   ══════════════════════════════════════════════════════ */
+
+/* ── Firebase config ── */
+var FB_CFG = {
+  apiKey:            "AIzaSyDxYQKQgdMNCuAFkuCGdQo3lILxL7_NO34",
+  authDomain:        "gestao-automacao-fc0b3.firebaseapp.com",
+  databaseURL:       "https://gestao-automacao-fc0b3-default-rtdb.firebaseio.com",
+  projectId:         "gestao-automacao-fc0b3",
+  storageBucket:     "gestao-automacao-fc0b3.firebasestorage.app",
+  messagingSenderId: "835612674768",
+  appId:             "1:835612674768:web:e9ecdf76d99112b6a6acd5"
+};
+var LS_KEY = 'gestao_automacao_dashboard';
+
+/* ── Maturity table (Bradley) ── */
+var MATURITY = [
+  {min:0,  max:40,  level:0, label:'Maturidade 0', badge:'0 – Inexistente',  cultura:'Reativa',       cls:'mat0', color:'#ef4444'},
+  {min:40, max:50,  level:1, label:'Maturidade 1', badge:'1 – Fraco',        cultura:'Dependente',     cls:'mat1', color:'#f97316'},
+  {min:50, max:70,  level:2, label:'Maturidade 2', badge:'2 – Em Implantação',cultura:'Dependente',    cls:'mat2', color:'#eab308'},
+  {min:70, max:95,  level:3, label:'Maturidade 3', badge:'3 – Implantado',   cultura:'Independente',   cls:'mat3', color:'#22c55e'},
+  {min:95, max:101, level:4, label:'Maturidade 4', badge:'4 – Excelência',   cultura:'Interdependente',cls:'mat4', color:'#06b6d4'}
+];
+
+var CULTURA_DESC = {
+  'Reativa':       'Área com pouco ou nenhum conhecimento dos sensos 5S. Processos inexistentes ou sem referência.',
+  'Dependente':    'Área começando a implementar os sensos 5S. Ações reativas oriundas de auditorias/incidentes.',
+  'Independente':  'Área consciente dos sensos 5S. Processos estáveis com metodologia implantada.',
+  'Interdependente':'Área totalmente consciente dos 5S com foco na melhoria contínua. Processos sistematizados.'
+};
+
+/* ── Note colors (0–4) ── */
+var NOTE_COLORS = ['#ff1744','#ff5500','#ffd600','#00e676','#00b0ff'];
+
+/* ── Fallback defaults ── */
+var DEFAULTS = {
+  areas: [
+    {id:'ibman_brit',  nome:'IBMAN - Britagem',       dono:'', tipo:'oficina'},
+    {id:'ibman_conc',  nome:'IBMAN - Concentração',   dono:'', tipo:'oficina'},
+    {id:'ibman_homo',  nome:'IBMAN - Homogeneização', dono:'', tipo:'oficina'},
+    {id:'icman_brit',  nome:'ICMAN - Britagem',       dono:'', tipo:'oficina'},
+    {id:'icman_patio', nome:'ICMAN - Pátio',          dono:'', tipo:'oficina'},
+    {id:'oficina',     nome:'Oficina Automação',      dono:'', tipo:'oficina'},
+    {id:'sala_auto',   nome:'Sala de Automação',      dono:'', tipo:'sala'},
+    {id:'adm',         nome:'Área Administrativa',    dono:'', tipo:'admin'}
+  ],
+  perguntasAdmin:[
+    'Os documentos estão organizados e identificados corretamente?',
+    'Materiais e objetos desnecessários foram removidos do espaço?',
+    'A área está limpa e livre de sujeira e resíduos?',
+    'Itens de uso frequente estão em locais de fácil acesso?',
+    'Os padrões de organização estão sendo mantidos consistentemente?'
+  ],
+  perguntasOficina:[
+    'Ferramentas e equipamentos estão organizados e nos locais corretos?',
+    'Materiais desnecessários foram removidos da área de trabalho?',
+    'A área está limpa e livre de sujeira, óleo e resíduos?',
+    'EPIs estão disponíveis, identificados e em bom estado de conservação?',
+    'Os padrões de segurança e organização estão visíveis e sendo seguidos?'
+  ],
+  perguntasSala:[
+    'Equipamentos e servidores estão identificados e organizados?',
+    'Cabos e fiações estão organizados, identificados e protegidos?',
+    'A sala está limpa e livre de poeira, sujeira e objetos desnecessários?',
+    'Itens desnecessários foram removidos e descartados corretamente?',
+    'Os padrões de organização e segurança estão sendo seguidos?'
+  ]
+};
+
+/* ── State ── */
+var _db = null, _fbOk = false;
+var dados = null;
+var areaSelecionada = null, areaObj = null;
+var notas = {}, ncs = {};
+
+/* ══ FIREBASE ══ */
+function initFB(){
+  fbStatusMsg('Conectando ao Firebase…', false);
+  if(typeof firebase === 'undefined'){ useFallback(); return; }
+  try{
+    if(!firebase.apps||!firebase.apps.length) firebase.initializeApp(FB_CFG);
+    _db = firebase.database();
+    firebase.auth().signInAnonymously()
+      .then(function(r){
+        _fbOk = true;
+        return _db.ref('gda_data').once('value');
+      })
+      .then(function(snap){
+        var d = snap ? snap.val() : null;
+        if(d && d.senso){
+          dados = buildDados(d.senso);
+          /* cache locally */
+          try{
+            var loc = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
+            loc.senso = d.senso;
+            localStorage.setItem(LS_KEY, JSON.stringify(loc));
+          }catch(e){}
+        } else {
+          dados = getFromLS();
+        }
+        fbStatusMsg('', false);
+        renderAreas();
+      })
+      .catch(function(e){
+        console.warn('[5S] Firebase error:', e.message||e);
+        dados = getFromLS();
+        fbStatusMsg('Modo offline', false);
+        renderAreas();
+      });
+  }catch(e){
+    console.warn('[5S] Init error:', e);
+    useFallback();
+  }
+}
+
+function useFallback(){
+  dados = getFromLS();
+  fbStatusMsg('', false);
+  renderAreas();
+}
+
+function buildDados(senso){
+  return {
+    areas:            (senso.areas&&senso.areas.length)?senso.areas:DEFAULTS.areas,
+    perguntasAdmin:   (senso.perguntasAdmin&&senso.perguntasAdmin.length)?senso.perguntasAdmin:DEFAULTS.perguntasAdmin,
+    perguntasOficina: (senso.perguntasOficina&&senso.perguntasOficina.length)?senso.perguntasOficina:DEFAULTS.perguntasOficina,
+    perguntasSala:    (senso.perguntasSala&&senso.perguntasSala.length)?senso.perguntasSala:DEFAULTS.perguntasSala,
+    avaliacoes:       senso.avaliacoes||[],
+    acoes:            senso.acoes||[]
+  };
+}
+
+function getFromLS(){
+  try{
+    var raw = localStorage.getItem(LS_KEY);
+    if(raw){ var d=JSON.parse(raw); if(d&&d.senso) return buildDados(d.senso); }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULTS));
+}
+
+function fbStatusMsg(msg, isErr){
+  var el = document.getElementById('fbStatus');
+  if(!el)return;
+  el.textContent = msg;
+  el.className   = msg ? 'show' : '';
+  el.style.color = isErr ? '#f87171' : '#6ee7b7';
+}
+
+/* ── SAVE ── */
+function salvarAvaliacao(avals){
+  if(!dados.avaliacoes) dados.avaliacoes = [];
+  avals.forEach(function(a){ dados.avaliacoes.push(a); });
+  /* localStorage */
+  try{
+    var loc = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
+    if(!loc.senso) loc.senso = {};
+    loc.senso.avaliacoes = dados.avaliacoes;
+    loc.senso.acoes = dados.acoes||[];
+    localStorage.setItem(LS_KEY, JSON.stringify(loc));
+  }catch(e){}
+  /* Firebase — update only avaliacoes+acoes, preserve areas/perguntas */
+  if(_db && _fbOk){
+    _db.ref('gda_data/senso').update({
+      avaliacoes: dados.avaliacoes,
+      acoes:      dados.acoes||[]
+    }).then(function(){
+      console.log('[5S] Avaliação salva no Firebase!');
+    }).catch(function(e){
+      console.warn('[5S] Firebase save error:', e.message||e);
+    });
+  }
+}
+
+/* ══ MATURITY CALC ══ */
+function calcMaturidade(pct){
+  for(var i=MATURITY.length-1;i>=0;i--){
+    if(pct > MATURITY[i].min) return MATURITY[i];
+  }
+  return MATURITY[0];
+}
+
+/* ══ RENDER AREAS ══ */
+function renderAreas(){
+  if(!dados) dados = getFromLS();
+  var grid  = document.getElementById('areaGrid');
+  var empty = document.getElementById('areaEmpty');
+  if(!dados.areas||!dados.areas.length){
+    grid.innerHTML = ''; empty.style.display='block'; return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = dados.areas.map(function(a){
+    var tc = a.tipo==='admin'?'admin':a.tipo==='sala'?'sala':'oficina';
+    var tl = a.tipo==='admin'?'ADM':a.tipo==='sala'?'SALA':'OFICINA';
+    return '<div class="area-btn" id="abtn_'+a.id+'" onclick="selecionarArea(\''+a.id+'\')" tabindex="0">'
+      +'<div class="area-btn-nome">'+a.nome+'</div>'
+      +'<div class="area-btn-meta">'
+      +'<span class="tipo-badge '+tc+'">'+tl+'</span>'
+      +(a.dono?'<span style="font-family:var(--fm);font-size:9px;color:var(--mt);">👤 '+a.dono+'</span>':'')
+      +'</div></div>';
+  }).join('');
+}
+
+function selecionarArea(id){
+  areaSelecionada = id;
+  areaObj = dados.areas.find(function(a){return a.id===id;});
+  document.querySelectorAll('.area-btn').forEach(function(b){b.classList.remove('selected');});
+  var btn = document.getElementById('abtn_'+id);
+  if(btn) btn.classList.add('selected');
+  document.getElementById('alertArea').classList.remove('show');
+}
+
+/* ══ RENDER QUESTIONS ══ */
+function irParaPerguntas(){
+  if(!areaSelecionada||!areaObj){
+    document.getElementById('alertArea').classList.add('show'); return;
+  }
+  notas={}; ncs={};
+  renderPerguntas();
+  showStep('stepPerguntas');
+}
+
+function getPergs(){
+  return areaObj.tipo==='admin' ? dados.perguntasAdmin
+       : areaObj.tipo==='sala'  ? dados.perguntasSala
+       : dados.perguntasOficina;
+}
+
+function renderPerguntas(){
+  var tl = areaObj.tipo==='admin'?'ADMINISTRATIVO':areaObj.tipo==='sala'?'SALA AUTOMAÇÃO':'OFICINA';
+  var tc = areaObj.tipo==='admin'?'admin':areaObj.tipo==='sala'?'sala':'oficina';
+  var pergs = getPergs();
+
+  document.getElementById('hArea').textContent   = areaObj.nome;
+  document.getElementById('hDono').textContent   = areaObj.dono?'👤 '+areaObj.dono:'';
+  document.getElementById('hBadge').innerHTML    = '<span class="h-badge '+tc+'">'+tl+'</span>';
+  document.getElementById('pergCardTitle').textContent = areaObj.nome+' — '+tl;
+
+  /* Set today as default date */
+  var di = document.getElementById('avalData');
+  if(di && !di.value){
+    var now = new Date();
+    di.value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  }
+
+  if(!pergs||!pergs.length){
+    document.getElementById('perguntasContainer').innerHTML=
+      '<div class="empty">Nenhuma pergunta cadastrada para <strong>'+tl+'</strong>.<br>Adicione em Gestão da Automação → EDITAR → 5S.</div>';
+    return;
+  }
+
+  document.getElementById('perguntasContainer').innerHTML = pergs.map(function(p,i){
+    return '<div class="perg-block" id="pblock_'+i+'">'
+      +'<div class="perg-num">PERGUNTA '+(i+1)+' DE '+pergs.length+'</div>'
+      +'<div class="perg-texto">'+p+'</div>'
+      +'<div class="nota-labels">'
+      +'<span class="nota-label">INEXIST.</span>'
+      +'<span class="nota-label">FRACO</span>'
+      +'<span class="nota-label">IMPLANT.</span>'
+      +'<span class="nota-label">IMPLANT.</span>'
+      +'<span class="nota-label">EXCELÊN.</span>'
+      +'</div>'
+      +'<div class="nota-row">'
+      +[0,1,2,3,4].map(function(n){
+        return '<div class="nota-btn n'+n+'" onclick="selecionarNota('+i+','+n+')" id="nbtn_'+i+'_'+n+'">'+n+'</div>';
+      }).join('')
+      +'</div>'
+      +'<div class="nc-field" id="nc_'+i+'">'
+      +'<div class="nc-label">⚠ Descreva a não conformidade:</div>'
+      +'<textarea class="nc-input" id="nctxt_'+i+'" rows="3" placeholder="Descreva o problema encontrado…"></textarea>'
+      +'</div></div>';
+  }).join('');
+
+  atualizarProg();
+}
+
+function selecionarNota(idx, nota){
+  notas[idx] = nota;
+  /* Clear previous selection for this question */
+  [0,1,2,3,4].forEach(function(n){
+    var btn = document.getElementById('nbtn_'+idx+'_'+n);
+    if(btn) btn.classList.toggle('sel', n===nota);
+  });
+  /* Show NC field for notes 0 and 1 */
+  var nc = document.getElementById('nc_'+idx);
+  if(nc) nc.classList.toggle('show', nota <= 1);
+  document.getElementById('alertPerguntas').classList.remove('show');
+  atualizarProg();
+}
+
+function atualizarProg(){
+  var pergs = getPergs();
+  if(!pergs||!pergs.length) return;
+  var pct = Math.round(Object.keys(notas).length / pergs.length * 100);
+  document.getElementById('progFill').style.width = pct+'%';
+}
+
+/* ══ SUBMIT ══ */
+function enviarAvaliacao(){
+  var pergs = getPergs();
+  if(!pergs||!pergs.length){ voltarArea(); return; }
+  if(Object.keys(notas).length < pergs.length){
+    document.getElementById('alertPerguntas').classList.add('show');
+    return;
+  }
+  document.getElementById('alertPerguntas').classList.remove('show');
+
+  var resp = (document.getElementById('avalResponsavel').value||'').trim();
+  var data = (document.getElementById('avalData').value||'');
+  var ts   = Date.now();
+
+  /* Collect NC texts */
+  pergs.forEach(function(p,i){
+    var txt = document.getElementById('nctxt_'+i);
+    if(txt) ncs[i] = txt.value.trim();
+  });
+
+  /* Build records */
+  var avals = [];
+  pergs.forEach(function(p,i){
+    avals.push({
+      areaId:      areaSelecionada,
+      areaNome:    areaObj.nome,
+      tipoForm:    areaObj.tipo,
+      perguntaIdx: i,
+      pergunta:    p,
+      nota:        notas[i],
+      nc:          notas[i]<=1 ? (ncs[i]||'') : '',
+      responsavel: resp,
+      data:        data,
+      ts:          ts
+    });
+  });
+
+  salvarAvaliacao(avals);
+
+  /* ── Calculate score ── */
+  var vals    = Object.values(notas).map(Number);
+  var total   = vals.length;
+  var maxPoss = total * 4;           /* max = 4 per question */
+  var soma    = vals.reduce(function(a,b){return a+b;},0);
+  var pct     = Math.round((soma / maxPoss) * 100);
+  var mat     = calcMaturidade(pct);
+  var desvios = vals.filter(function(n){return n<=1;}).length;
+  var tl      = areaObj.tipo==='admin'?'ADMINISTRATIVO':areaObj.tipo==='sala'?'SALA AUTOMAÇÃO':'OFICINA';
+  var tc      = areaObj.tipo==='admin'?'admin':areaObj.tipo==='sala'?'sala':'oficina';
+
+  /* ── Render success screen ── */
+  var mn = document.getElementById('sucMatNum');
+  mn.textContent  = 'MAT. '+mat.level;
+  mn.style.color  = mat.color;
+
+  document.getElementById('sucPct').textContent = soma+' de '+maxPoss+' pontos — '+pct+'%';
+  document.getElementById('sucPct').style.color = mat.color;
+
+  var mb = document.getElementById('sucMatBadge');
+  mb.textContent       = mat.badge;
+  mb.style.background  = mat.color+'22';
+  mb.style.border      = '1px solid '+mat.color+'88';
+  mb.style.color       = mat.color;
+
+  document.getElementById('sucCultura').innerHTML =
+    '<strong style="color:'+mat.color+';">Cultura '+mat.cultura+'</strong><br>'
+    +(CULTURA_DESC[mat.cultura]||'');
+
+  document.getElementById('sucBadgeArea').innerHTML =
+    '<span class="suc-badge tipo-badge '+tc+'">'+tl+'</span>';
+
+  document.getElementById('sucDetail').innerHTML =
+    '<strong style="color:var(--wh);">'+areaObj.nome+'</strong><br>'
+    +(areaObj.dono?'👤 '+areaObj.dono+'<br>':'')
+    +total+' perguntas respondidas · Soma: '+soma+'/'+maxPoss+'<br>'
+    +(desvios
+      ?'<span style="color:var(--rd);">⚠ '+desvios+' não conformidade(s)</span>'
+      :'<span style="color:var(--gn);">✓ Sem não conformidades</span>')
+    +(resp?'<br><span style="color:var(--mt);">Avaliador: '+resp+'</span>':'')
+    +(data?'<br><span style="color:var(--mt);">Data: '+data.split('-').reverse().join('/')+'</span>':'');
+
+  /* NC summary */
+  var ncsHtml = '';
+  if(desvios > 0){
+    ncsHtml = '<div class="nc-summary"><div class="nc-summary-title">⚠ NÃO CONFORMIDADES REGISTRADAS</div>';
+    pergs.forEach(function(p,i){
+      if(notas[i]<=1 && ncs[i]){
+        ncsHtml += '<div class="nc-item">'
+          +'<div class="nc-item-q">Q'+(i+1)+': '+p+'</div>'
+          +'<div style="color:var(--rd);">↳ '+ncs[i]+'</div>'
+          +'</div>';
+      }
+    });
+    ncsHtml += '</div>';
+  }
+  document.getElementById('sucNcSummary').innerHTML = ncsHtml;
+
+  document.getElementById('progFill').style.width = '100%';
+  showStep('stepSucesso');
+}
+
+function voltarArea(){
+  showStep('stepArea');
+  document.getElementById('hArea').textContent = '';
+  document.getElementById('hDono').textContent = '';
+  document.getElementById('hBadge').innerHTML  = '';
+  document.getElementById('progFill').style.width = '0%';
+}
+
+function novaAvaliacao(){
+  areaSelecionada = null; areaObj = null;
+  notas = {}; ncs = {};
+  document.querySelectorAll('.area-btn').forEach(function(b){b.classList.remove('selected');});
+  document.getElementById('avalResponsavel').value = '';
+  document.getElementById('avalData').value = '';
+  document.getElementById('progFill').style.width = '0%';
+  showStep('stepArea');
+}
+
+function showStep(id){
+  ['stepArea','stepPerguntas','stepSucesso'].forEach(function(s){
+    var el = document.getElementById(s);
+    if(el) el.classList.toggle('active', s===id);
+  });
+  window.scrollTo(0,0);
+}
+
+/* ══ PWA ══ */
+var _installPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  _installPrompt = e;
+  var dismissed = localStorage.getItem('5s_pwa_dismissed');
+  if(!dismissed){
+    document.getElementById('installBanner').classList.add('show');
+  }
+});
+
+function instalarApp(){
+  if(!_installPrompt) return;
+  _installPrompt.prompt();
+  _installPrompt.userChoice.then(function(r){
+    if(r.outcome==='accepted') fecharBanner();
+    _installPrompt = null;
+  });
+}
+
+function fecharBanner(){
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('5s_pwa_dismissed','1');
+}
+
+window.addEventListener('appinstalled', function(){
+  fecharBanner();
+});
+
+/* ── Register SW ── */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw_5s.js').catch(function(e){
+    console.warn('[5S] SW not registered:', e);
+  });
+}
+
+/* ── Init ── */
+initFB();
+</script>
+</body>
+</html>
