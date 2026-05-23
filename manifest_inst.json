@@ -1,0 +1,16 @@
+{
+  "name": "Gestão de Instrumentos",
+  "short_name": "Instrumentos",
+  "description": "Gestão de Instrumentos de Campo – ArcelorMittal Mina do Andrade",
+  "id": "gestao-instrumentos-andrade",
+  "start_url": "./gestao_instrumentos.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a1020",
+  "theme_color": "#38bdf8",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icon_inst_192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon_inst_512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
