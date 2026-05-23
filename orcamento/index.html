@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Orçamento — Redes & CFTV</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#a855f7">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Orçamento Redes">
+<link rel="apple-touch-icon" href="../icon_orc_192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+(function(){
+  var cfg = {
+    apiKey:            'AIzaSyDxYQKQgdMNCuAFkuCGdQo3lILxL7_NO34',
+    authDomain:        'gestao-automacao-fc0b3.firebaseapp.com',
+    databaseURL:       'https://gestao-automacao-fc0b3-default-rtdb.firebaseio.com',
+    projectId:         'gestao-automacao-fc0b3',
+    storageBucket:     'gestao-automacao-fc0b3.firebasestorage.app',
+    messagingSenderId: '835612674768',
+    appId:             '1:835612674768:web:e9ecdf76d99112b6a6acd5'
+  };
+  try {
+    var app = firebase.apps.filter(function(a){return a.name==='or';}).length
+      ? firebase.app('or')
+      : firebase.initializeApp(cfg, 'or');
+    var db = firebase.database(app);
+    var FB_ROOT = 'gda_orcamentos_redes';
+    var _fbWriting = false, _firstLoad = true, _saveTimer = null;
+
+    /* ── helpers que o código global usa ── */
+    window._fb = {
+      /* listen: chama cb(snapshot_array) a cada mudança */
+      listenBudgets: function(cb){
+        db.ref(FB_ROOT+'/budgets').on('value', function(snap){
+          if(_firstLoad){ _firstLoad=false; }
+          var arr = [];
+          var v = snap.val();
+          if(v) Object.keys(v).forEach(function(k){ arr.push(Object.assign({id:k},v[k])); });
+          cb(arr);
+        });
+      },
+      /* salvar/atualizar um orçamento */
+      setBudget: function(id, data){
+        _fbWriting = true;
+        db.ref(FB_ROOT+'/budgets/'+id).set(data)
+          .then(function(){ setTimeout(function(){_fbWriting=false;},1000); })
+          .catch(function(e){ _fbWriting=false; console.warn('OR write:',e); });
+      },
+      /* deletar */
+      deleteBudget: function(id){
+        db.ref(FB_ROOT+'/budgets/'+id).remove();
+      },
+      /* seq */
+      getSeq: function(cb){
+        db.ref(FB_ROOT+'/config/seq').once('value').then(function(s){
+          cb(s.val()||0);
+        }).catch(function(){ cb(0); });
+      },
+      setSeq: function(n){
+        db.ref(FB_ROOT+'/config/seq').set(n);
+      }
+    };
+    window._fbReady = true;
+    document.dispatchEvent(new Event('firebase-ready'));
+  } catch(e){ console.warn('Firebase OR init:',e.message); }
+})();
+</script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --surface3: #30363d;
+    --border: #30363d;
+    --border-light: #21262d;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --accent-dim: rgba(249,115,22,0.12);
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --green: #3fb950;
+    --blue: #58a6ff;
+    --red: #f85149;
+    --yellow: #d29922;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    overflow-x: hidden;
+  }
+
+  /* ── SYNC STATUS BAR ── */
+  .sync-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 5px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+  }
+  .sync-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .sync-dot.online  { background: var(--green); box-shadow: 0 0 6px rgba(63,185,80,.6); }
+  .sync-dot.syncing { background: var(--yellow); animation: pulse 1s infinite; }
+  .sync-dot.error   { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ---- HEADER ---- */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 14px; letter-spacing: -0.3px;
+    min-width: 0;
+  }
+  .header-logo-icon {
+    width: 34px; height: 34px; background: var(--accent);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .header-logo-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header-subtitle { color: var(--text2); font-size: 11px; font-weight: 400; }
+
+  /* ---- TABS ---- */
+  .tabs {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0;
+    display: flex; gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    padding: 13px 16px; background: none; border: none;
+    color: var(--text2); cursor: pointer; font-family: inherit; font-size: 13px;
+    font-weight: 500; border-bottom: 2px solid transparent;
+    transition: all 0.15s; display: flex; align-items: center; gap: 7px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-badge {
+    background: var(--surface3); color: var(--text2);
+    border-radius: 20px; padding: 1px 7px; font-size: 11px; font-family: 'DM Mono', monospace;
+  }
+  .tab-btn.active .tab-badge { background: var(--accent-dim); color: var(--accent); }
+
+  /* ---- LAYOUT ---- */
+  .content { padding: 16px; max-width: 1300px; margin: 0 auto; }
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  /* ---- CARDS ---- */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 12px; font-weight: 600; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before { content:''; display:inline-block; width:3px; height:14px; background:var(--accent); border-radius:2px; }
+
+  /* ---- GRID ---- */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+
+  /* ---- INPUTS ---- */
+  .field label {
+    display: block; font-size: 11px; font-weight: 600; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px;
+  }
+  .field input, .field select {
+    width: 100%; padding: 9px 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-family: inherit; font-size: 13px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text3); }
+  .field select option { background: var(--surface2); }
+
+  /* ---- PHOTO UPLOAD ---- */
+  .photo-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface2);
+    position: relative;
+  }
+  .photo-upload-area:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .photo-upload-area.has-photo { border-color: var(--green); border-style: solid; }
+  .photo-upload-area input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .photo-upload-text { font-size: 12px; color: var(--text2); pointer-events: none; }
+  .photo-thumb-wrap { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .photo-thumb {
+    position: relative; width: 72px; height: 72px;
+    border-radius: var(--radius-sm); overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-thumb-del {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(0,0,0,.7); color: white; border: none;
+    border-radius: 50%; width: 18px; height: 18px;
+    font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .photo-count-badge {
+    background: var(--green); color: white;
+    border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700;
+    margin-left: 6px;
+  }
+
+  /* ---- BUTTONS ---- */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: var(--radius-sm); border: none;
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(249,115,22,0.35); }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--text2); }
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+  .btn-danger:hover { background: rgba(248,81,73,0.1); }
+  .btn-green { background: transparent; color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .btn-green:hover { background: rgba(63,185,80,0.1); }
+  .btn-blue { background: transparent; color: var(--blue); border: 1px solid rgba(88,166,255,0.3); }
+  .btn-blue:hover { background: rgba(88,166,255,0.1); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-xs { padding: 4px 9px; font-size: 11px; }
+  .btn-icon { padding: 7px; }
+
+  /* ---- SEARCH BAR ---- */
+  .search-wrap { position: relative; }
+  .search-wrap input { padding-left: 36px; }
+  .search-icon {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    color: var(--text3); font-size: 14px; pointer-events: none;
+  }
+
+  /* ---- TABLE ---- */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--surface2); padding: 10px 12px; text-align: left;
+    font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase;
+    letter-spacing: 0.6px; border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  thead th.r { text-align: right; }
+  thead th.c { text-align: center; }
+  tbody tr { border-bottom: 1px solid var(--border-light); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 10px 12px; vertical-align: middle; }
+  tbody td.r { text-align: right; }
+  tbody td.c { text-align: center; }
+  .mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+  .code-badge {
+    background: var(--accent-dim); color: var(--accent);
+    border-radius: 4px; padding: 2px 7px; font-size: 11px; font-family: 'DM Mono', monospace;
+  }
+  .acq-badge {
+    display: inline-block; border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
+  }
+  .acq-compra { background: rgba(88,166,255,0.1); color: var(--blue); }
+  .acq-estoque { background: rgba(63,185,80,0.1); color: var(--green); }
+
+  /* ---- QTY INPUT ---- */
+  .qty-input {
+    width: 68px; padding: 5px 8px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px;
+    text-align: center; outline: none;
+  }
+  .qty-input:focus { border-color: var(--accent); }
+
+  /* ---- TOTAL ROW ---- */
+  .total-row td {
+    background: var(--surface2) !important;
+    border-top: 2px solid var(--accent) !important;
+    font-weight: 700; color: var(--accent); font-size: 15px;
+  }
+  .total-row td:first-child { color: var(--text2); font-size: 13px; }
+
+  /* ---- SUPPLIER TOGGLE ---- */
+  .supplier-toggle { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .sup-btn {
+    padding: 7px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); cursor: pointer; font-family: inherit;
+    font-size: 13px; font-weight: 600; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+  }
+  .sup-btn.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .sup-btn:hover:not(.active) { border-color: var(--text2); color: var(--text); }
+
+  /* ---- HISTORY CARD ---- */
+  .hist-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+    transition: border-color 0.15s;
+  }
+  .hist-card:hover { border-color: var(--accent); }
+  .hist-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+  .hist-meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); }
+  .version-pill {
+    background: var(--accent-dim); color: var(--accent);
+    border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 700; font-family: 'DM Mono', monospace;
+  }
+  .hist-total { font-size: 20px; font-weight: 700; color: var(--accent); font-family: 'DM Mono', monospace; }
+  .hist-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  /* ---- BANNER ---- */
+  .edit-banner {
+    background: rgba(217,161,34,0.1); border: 1px solid rgba(217,161,34,0.35);
+    border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 14px;
+    display: flex; align-items: flex-start; gap: 10px; font-size: 13px; flex-wrap: wrap;
+  }
+
+  /* ---- TOAST ---- */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--surface3); border: 1px solid var(--border);
+    color: var(--text); border-radius: var(--radius); padding: 12px 20px;
+    font-size: 13px; z-index: 9999; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    display: flex; align-items: center; gap: 10px; max-width: 90vw;
+    animation: slideUp 0.3s ease; white-space: pre-line; text-align: center;
+  }
+  @keyframes slideUp { from { opacity:0; transform:translateX(-50%) translateY(20px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+  /* ---- EMPTY STATE ---- */
+  .empty-state {
+    text-align: center; padding: 48px 20px; color: var(--text3);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* ---- SCROLLABLE TABLE ---- */
+  .mat-table-wrap { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  .mat-table-wrap::-webkit-scrollbar { width: 6px; }
+  .mat-table-wrap::-webkit-scrollbar-track { background: var(--surface2); }
+  .mat-table-wrap::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+  /* ---- FILTERS ROW ---- */
+  .filter-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+
+  /* ---- PRINT STYLES ---- */
+  @media print {
+    body { background: white; color: #111; }
+    .no-print { display: none !important; }
+  }
+
+  /* ---- ANIMATIONS ---- */
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform:none; } }
+  .pane.active { animation: fadeIn 0.2s ease; }
+
+  /* ---- HELPERS ---- */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+  .flex-between { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  .flex-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+  .stat-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text2);
+  }
+  .stat-chip .val { font-weight: 700; color: var(--text); font-family: 'DM Mono', monospace; }
+
+  /* ═══ MOBILE RESPONSIVE ═══ */
+  @media (max-width: 768px) {
+    .header { height: 52px; padding: 0 14px; }
+    .header-logo { font-size: 13px; }
+    .header-subtitle { font-size: 10px; }
+    .content { padding: 12px; }
+    .card { padding: 14px; }
+    .grid2, .grid3, .grid4 { grid-template-columns: 1fr 1fr; }
+    .filter-row { grid-template-columns: 1fr 1fr; }
+    .hist-card { padding: 14px; }
+    .hist-card .flex-between { flex-direction: column; gap: 12px; }
+    .hist-total { font-size: 18px; }
+    .hist-actions { justify-content: flex-start; }
+    .hist-actions .btn-sm { font-size: 12px; padding: 6px 10px; }
+    .cad-form-grid { grid-template-columns: 1fr 1fr !important; }
+    .cad-form-actions { grid-column: 1 / -1; }
+    .flex-between.acq-row { flex-direction: column; align-items: flex-start; }
+    .search-wrap { width: 100% !important; }
+    .btn { font-size: 13px; }
+    thead th, tbody td { padding: 8px 10px; font-size: 12px; }
+  }
+
+  @media (max-width: 480px) {
+    .header-subtitle { display: none; }
+    .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+    .filter-row { grid-template-columns: 1fr; }
+    .cad-form-grid { grid-template-columns: 1fr !important; }
+    .tab-btn { font-size: 12px; padding: 12px 12px; }
+    .tab-btn span { display: none; }
+    .hist-actions .btn-sm { padding: 6px 8px; }
+    .qty-input { width: 56px; }
+    .stat-chip { font-size: 11px; padding: 3px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SYNC STATUS BAR -->
+<div class="sync-bar no-print" id="sync-bar">
+  <div class="sync-dot" id="sync-dot"></div>
+  <span id="sync-label">Conectando ao Firebase...</span>
+</div>
+
+<!-- HEADER -->
+<div class="header no-print">
+  <div class="header-logo">
+    <div class="header-logo-icon">📡</div>
+    <div class="header-logo-text">
+      <div>SUPERVISÃO DE AUTOMAÇÃO</div>
+      <div class="header-subtitle">Sistema de Orçamentos — Redes &amp; CFTV</div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs no-print">
+  <button class="tab-btn active" onclick="switchTab('orcamento',this)">
+    ＋ Orçamento
+  </button>
+  <button class="tab-btn" onclick="switchTab('historico',this)">
+    📋 Histórico <span class="tab-badge" id="hist-count">0</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('cadastro',this)">
+    🔧 Cadastro <span class="tab-badge" id="mat-count">0</span>
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════ ABA ORÇAMENTO ═══════════════════════════════════════ -->
+<div class="content">
+<div id="pane-orcamento" class="pane active">
+
+  <div id="edit-banner" class="edit-banner" style="display:none">
+    <span>⚠️</span>
+    <span id="edit-banner-text"></span>
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="cancelEdit()">Cancelar edição</button>
+  </div>
+
+  <!-- Dados do orçamento -->
+  <div class="card">
+    <div class="card-title">Identificação do Orçamento</div>
+    <div class="grid4" style="margin-bottom:14px">
+      <div class="field">
+        <label>Solicitante *</label>
+        <input id="f-solicitante" type="text" placeholder="Nome do solicitante">
+      </div>
+      <div class="field">
+        <label>Local / Projeto *</label>
+        <input id="f-local" type="text" placeholder="Ex: CFTV RCM — Bloco B">
+      </div>
+      <div class="field">
+        <label>Responsável pelo Orçamento *</label>
+        <input id="f-responsavel" type="text" placeholder="Nome do orçamentista">
+      </div>
+      <div class="field">
+        <label>E-mail do Destinatário</label>
+        <input id="f-email" type="email" placeholder="destino@empresa.com">
+      </div>
+    </div>
+
+    <!-- Foto do local -->
+    <div style="margin-bottom:14px">
+      <div class="field">
+        <label>📷 Fotos do Local <span id="photo-count-badge" class="photo-count-badge" style="display:none">0</span></label>
+        <div class="photo-upload-area" id="photo-drop-zone" onclick="document.getElementById('photo-input').click()">
+          <input type="file" id="photo-input" accept="image/*" multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%" onchange="handlePhotoUpload(this)">
+          <div class="photo-upload-text" id="photo-upload-hint">
+            📷 Toque para adicionar fotos do local<br>
+            <span style="font-size:11px;color:var(--text3)">JPG, PNG • múltiplas fotos permitidas</span>
+          </div>
+        </div>
+        <div class="photo-thumb-wrap" id="photo-thumbs"></div>
+      </div>
+    </div>
+
+    <div class="flex-between acq-row">
+      <div class="flex-row">
+        <span style="font-size:12px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.6px">Forma de Aquisição:</span>
+        <div class="supplier-toggle">
+          <button class="sup-btn active" id="sup-todas" onclick="setSup('TODAS',this)">🔄 Todas</button>
+          <button class="sup-btn" id="sup-estoque" onclick="setSup('ESTOQUE',this)">📦 Estoque</button>
+          <button class="sup-btn" id="sup-compra" onclick="setSup('COMPRA',this)">🛒 Compra</button>
+        </div>
+      </div>
+      <div class="flex-row">
+        <div class="stat-chip">Itens: <span class="val" id="stat-items">0</span></div>
+        <div class="stat-chip">Total: <span class="val" id="stat-total">R$ 0,00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Catálogo de materiais -->
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0">Catálogo de Materiais</div>
+      <div class="search-wrap" style="width:280px">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="cat-search" placeholder="Buscar por descrição ou código..." oninput="renderCatalog()">
+      </div>
+    </div>
+    <div class="mat-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Código SAP</th>
+            <th>Descrição</th>
+            <th class="c">Un.</th>
+            <th class="r">Custo Unit.</th>
+            <th class="c">Aquisição</th>
+            <th class="c">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="catalog-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Itens selecionados -->
+  <div class="card" id="items-card" style="display:none">
+    <div class="card-title">Itens do Orçamento</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th class="c">Un.</th>
+            <th class="c">Qtd</th>
+            <th class="r">Custo Unit.</th>
+            <th class="r">Total</th>
+            <th class="c">Aquisição</th>
+            <th class="c"></th>
+          </tr>
+        </thead>
+        <tbody id="items-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ações -->
+  <div class="flex-row" style="justify-content:flex-end;gap:10px">
+    <button class="btn btn-ghost" onclick="clearForm()">🔄 Limpar</button>
+    <button class="btn btn-primary" onclick="saveBudget()">💾 Salvar Orçamento</button>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════ ABA HISTÓRICO ═══════════════════════════════════════ -->
+<div id="pane-historico" class="pane">
+
+  <div class="card">
+    <div class="card-title" style="margin-bottom:14px">Filtros</div>
+    <div class="filter-row">
+      <div class="field">
+        <label>Solicitante</label>
+        <input type="text" id="hf-solicitante" oninput="renderHistory()" placeholder="Filtrar...">
+      </div>
+      <div class="field">
+        <label>Local / Projeto</label>
+        <input type="text" id="hf-local" oninput="renderHistory()" placeholder="Filtrar...">
+      </div>
+      <div class="field">
+        <label>Responsável</label>
+        <input type="text" id="hf-responsavel" oninput="renderHistory()" placeholder="Filtrar...">
+      </div>
+      <div class="field">
+        <label>Data Início</label>
+        <input type="date" id="hf-inicio" oninput="renderHistory()">
+      </div>
+      <div class="field">
+        <label>Data Fim</label>
+        <input type="date" id="hf-fim" oninput="renderHistory()">
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn btn-ghost btn-sm" onclick="clearHistFilters()">Limpar filtros</button>
+    </div>
+  </div>
+
+  <div id="history-list"></div>
+</div>
+
+<!-- ═══════════════════════════════════════ ABA CADASTRO ═══════════════════════════════════════ -->
+<div id="pane-cadastro" class="pane">
+
+  <div class="card">
+    <div class="card-title" id="cad-title">Novo Insumo</div>
+    <div class="cad-form-grid" style="display:grid;grid-template-columns:160px 1fr 100px 140px 140px 160px auto;gap:12px;align-items:end">
+      <div class="field">
+        <label>Código SAP</label>
+        <input id="cad-codigo" type="text" placeholder="Ex: 7022389">
+      </div>
+      <div class="field">
+        <label>Descrição *</label>
+        <input id="cad-descricao" type="text" placeholder="Descrição do material">
+      </div>
+      <div class="field">
+        <label>Unidade</label>
+        <input id="cad-unidade" type="text" placeholder="PC / MT / UN">
+      </div>
+      <div class="field">
+        <label>Custo Unitário (R$)</label>
+        <input id="cad-custo" type="number" step="0.01" min="0" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Forma de Aquisição</label>
+        <select id="cad-aquisicao">
+          <option value="COMPRA">COMPRA</option>
+          <option value="ESTOQUE">ESTOQUE</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Obs / Fabricante</label>
+        <input id="cad-obs" type="text" placeholder="Opcional">
+      </div>
+      <div class="cad-form-actions" style="display:flex;gap:6px;padding-bottom:1px">
+        <button class="btn btn-primary" onclick="saveMaterial()">💾 Salvar</button>
+        <button class="btn btn-ghost" id="cad-cancel" onclick="cancelMatEdit()" style="display:none">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0">Base de Insumos (<span id="cad-count-label">0</span>)</div>
+      <div class="search-wrap" style="width:260px">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="cad-search" placeholder="Buscar insumo..." oninput="renderCadTable()">
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Código SAP</th>
+            <th>Descrição</th>
+            <th class="c">Un.</th>
+            <th class="r">Custo Unit.</th>
+            <th class="c">Aquisição</th>
+            <th>Obs</th>
+            <th class="c">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="cad-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  DEFAULTS
+// ════════════════════════════════════════════════════════════════
+const DEFAULT_MATERIALS = [
+  { id:'mat-1',  codigo:'19234934', descricao:'CABO DE FIBRA OPTICA AUTOSSUSTENTAVEL - 12 FO',   unidade:'MT',    custo:6.33,   aquisicao:'COMPRA',  obs:'' },
+  { id:'mat-2',  codigo:'19234847', descricao:'CONVERSOR MIDIA SM 10-1000 SCRJ 10KM GT-802S',    unidade:'PC',    custo:1409.33,aquisicao:'ESTOQUE', obs:'' },
+  { id:'mat-3',  codigo:'19236950', descricao:'ALCA PREF.CABO MULTIPLEXADO 25MM2 228833',         unidade:'PC',    custo:8.18,   aquisicao:'ESTOQUE', obs:'' },
+  { id:'mat-4',  codigo:'19236949', descricao:'DIO BW12 PAREDE C/BA/PL.PVC CZ 12/24 35260276',   unidade:'UN.',   custo:500.00, aquisicao:'COMPRA',  obs:'' },
+  { id:'mat-5',  codigo:'CADASTRAR',descricao:'CORDAO SM 2F SCSC APC 657A LSZH 10M 33000921',    unidade:'PC',    custo:166.96, aquisicao:'COMPRA',  obs:'' },
+  { id:'mat-6',  codigo:'7022389',  descricao:'CONDULETE AL.S/ROSCA C/TAMPA LR I 1',             unidade:'UN.',   custo:33.08,  aquisicao:'ESTOQUE', obs:'' },
+  { id:'mat-7',  codigo:'PROHETEL', descricao:'POSTE DE MADEIRA 300 DAM',                         unidade:'PC',    custo:13.00,  aquisicao:'ESTOQUE', obs:'' },
+  { id:'mat-8',  codigo:'7005547',  descricao:'CABO PP 500V 3X02,50MM2 CL5 FLEX',                unidade:'MT',    custo:3.95,   aquisicao:'COMPRA',  obs:'' },
+  { id:'mat-9',  codigo:'19151846', descricao:'DISJUNTOR 10A',                                    unidade:'UN.',   custo:12.00,  aquisicao:'COMPRA',  obs:'' },
+  { id:'mat-10', codigo:'7008666',  descricao:'FILTRO LINHA PVC 05T.2P+T PR 1,2MT QFL5 QUALIT', unidade:'UN.',   custo:22.00,  aquisicao:'COMPRA',  obs:'' },
+  { id:'mat-11', codigo:'CADASTRAR',descricao:'PAINEL P/M.400x300x250MM',                         unidade:'PC',    custo:600.00, aquisicao:'COMPRA',  obs:'' },
+  { id:'mat-12', codigo:'1094007',  descricao:'TOMADA SISTEMA X 2P+T 10A 250V NBR14136 675060',  unidade:'UN.',   custo:13.96,  aquisicao:'COMPRA',  obs:'' },
+  { id:'mat-13', codigo:'7037541',  descricao:'PLUG RJ45 CAT6 FTP BLIND.P/CABO DIVERSOS C/10',   unidade:'PCT',   custo:35.83,  aquisicao:'COMPRA',  obs:'' },
+  { id:'mat-14', codigo:'7027150',  descricao:'ELETRODUTO GALV.FG.EB342/NBR5598 I 1 2,65MM',     unidade:'UN.',   custo:97.72,  aquisicao:'ESTOQUE', obs:'' },
+  { id:'mat-15', codigo:'7022385',  descricao:'CONDULETE AL.S/ROSCA C/TAMPA C I 1',              unidade:'UN.',   custo:19.02,  aquisicao:'ESTOQUE', obs:'' },
+  { id:'mat-16', codigo:'7065175',  descricao:'CONECTOR MACHO-GIRATORIO KMZG-100/TMG I 1',        unidade:'UN.',   custo:22.77,  aquisicao:'ESTOQUE', obs:'' },
+  { id:'mat-17', codigo:'7028117',  descricao:'SEAL-TUBE GALVANIZADO PVC I 1',                    unidade:'METRO', custo:8.73,   aquisicao:'ESTOQUE', obs:'' },
+  { id:'mat-18', codigo:'19235982', descricao:'FECHO P/ FITA ACO INOX 3/4 DENTADO',              unidade:'UN.',   custo:2.45,   aquisicao:'ESTOQUE', obs:'' },
+  { id:'mat-19', codigo:'7031373',  descricao:'BRAÇADEIRA REGUL 2,5 X 203 MM NYLON',              unidade:'UN.',   custo:0.18,   aquisicao:'ESTOQUE', obs:'' },
+];
+
+// ════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════
+let materials     = [];
+let budgets       = [];
+let budgetItems   = [];
+let editingBudget = null;
+let editingMatId  = null;
+let supFilter     = 'TODAS';
+let nextId        = Date.now();
+let currentPhotos = [];
+const uid = () => 'id-' + (++nextId) + '-' + Math.random().toString(36).slice(2,7);
+
+// ════════════════════════════════════════════════════════════════
+//  SYNC STATUS
+// ════════════════════════════════════════════════════════════════
+function setSyncStatus(status, msg) {
+  const dot   = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  dot.className = 'sync-dot ' + status;
+  label.textContent = msg;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  FIREBASE PERSISTENCE (REAL-TIME LISTENERS)
+// ════════════════════════════════════════════════════════════════
+let fbReady = false;
+
+document.addEventListener('firebase-ready', () => {
+  fbReady = true;
+  var _db = firebase.database(firebase.app('or'));
+  var FB_ROOT = 'gda_orcamentos_redes';
+
+  setSyncStatus('syncing', 'Sincronizando dados...');
+
+  // ── Materiais: ouvinte em tempo real ──────────────────────────
+  _db.ref(FB_ROOT+'/materials').on('value', function(snap) {
+    var val = snap.val();
+    var docs = val ? Object.keys(val).map(function(k){ return val[k]; }) : [];
+    if (docs.length === 0 && materials.length === 0) {
+      DEFAULT_MATERIALS.forEach(function(m){ fbSetMaterial(m); });
+      materials = DEFAULT_MATERIALS;
+    } else {
+      materials = docs;
+    }
+    renderCatalog();
+    renderCadTable();
+    updateBadges();
+    setSyncStatus('online', 'Sincronizado · Firebase RTDB');
+  }, function(err) {
+    console.error(err);
+    setSyncStatus('error', 'Erro de conexão — usando dados locais');
+    if (materials.length === 0) materials = DEFAULT_MATERIALS;
+    renderCatalog(); renderCadTable(); updateBadges();
+  });
+
+  // ── Orçamentos: ouvinte em tempo real ─────────────────────────
+  _db.ref(FB_ROOT+'/budgets').on('value', function(snap) {
+    var val = snap.val();
+    budgets = val ? Object.keys(val).map(function(k){ return val[k]; }) : [];
+    updateBadges();
+    if (document.getElementById('pane-historico').classList.contains('active')) renderHistory();
+    setSyncStatus('online', 'Sincronizado · Firebase RTDB');
+  }, function(err) {
+    console.error(err);
+    setSyncStatus('error', 'Erro ao carregar orçamentos');
+  });
+});
+
+function fbSetMaterial(m) {
+  if (!fbReady) return;
+  firebase.database(firebase.app('or')).ref('gda_orcamentos_redes/materials/'+String(m.id)).set(m)
+    .catch(function(e){ console.error('fbSetMaterial', e); });
+}
+
+function fbDeleteMaterial(id) {
+  if (!fbReady) return;
+  firebase.database(firebase.app('or')).ref('gda_orcamentos_redes/materials/'+String(id)).remove()
+    .catch(function(e){ console.error('fbDeleteMaterial', e); });
+}
+
+function fbSetBudget(b) {
+  if (!fbReady) return;
+  setSyncStatus('syncing', 'Salvando orçamento...');
+  var safe = Object.assign({}, b, {
+    photos: (b.photos||[]).map(function(p){ return { name: p.name, dataUrl: p.dataUrl }; })
+  });
+  firebase.database(firebase.app('or')).ref('gda_orcamentos_redes/budgets/'+String(b.id)).set(safe)
+    .then(function(){ setSyncStatus('online', 'Sincronizado · Firebase RTDB'); })
+    .catch(function(e){ console.error('fbSetBudget',e); setSyncStatus('error','Erro ao salvar'); });
+}
+
+// ════════════════════════════════════════════════════════════════
+function fbDeleteBudget(id) {
+  if (!fbReady) return;
+  firebase.database(firebase.app('or')).ref('gda_orcamentos_redes/budgets/'+String(id)).remove();
+}
+
+//  BUDGET SEQ (persiste no Firebase via doc especial)
+// ════════════════════════════════════════════════════════════════
+let _budgetSeq = 0;
+
+async function genBudgetCodigo() {
+  _budgetSeq++;
+  if (fbReady) {
+    firebase.database(firebase.app('or')).ref('gda_orcamentos_redes/config/seq').set(_budgetSeq);
+  }
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const s = String(_budgetSeq).padStart(5,'0');
+  return `${y}.${m}.${s}`;
+}
+
+// Carrega seq do Firebase ao iniciar
+document.addEventListener('firebase-ready', function() {
+  firebase.database(firebase.app('or')).ref('gda_orcamentos_redes/config/seq')
+    .once('value').then(function(s){ if(s.val()) _budgetSeq = s.val(); }).catch(function(){});
+});
+
+// ════════════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════════════
+const fmt = v => 'R$ ' + Number(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+function getMat(id) { return materials.find(m => String(m.id) === String(id)); }
+
+function calcTotal(items) {
+  return items.reduce((s,it) => {
+    const m = getMat(it.materialId);
+    return s + (m ? m.custo * it.qty : 0);
+  }, 0);
+}
+
+function showToast(msg, duration=3500) {
+  const existing = document.getElementById('toast-el');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'toast-el';
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PHOTO HANDLING
+// ════════════════════════════════════════════════════════════════
+function handlePhotoUpload(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  const promises = files.map(file => new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => resolve({ name: file.name, dataUrl: e.target.result });
+    reader.readAsDataURL(file);
+  }));
+  Promise.all(promises).then(photos => {
+    currentPhotos = [...currentPhotos, ...photos];
+    renderPhotoThumbs();
+    input.value = '';
+  });
+}
+
+function renderPhotoThumbs() {
+  const wrap  = document.getElementById('photo-thumbs');
+  const hint  = document.getElementById('photo-upload-hint');
+  const zone  = document.getElementById('photo-drop-zone');
+  const badge = document.getElementById('photo-count-badge');
+  if (currentPhotos.length > 0) {
+    zone.classList.add('has-photo');
+    hint.innerHTML = `📷 Adicionar mais fotos`;
+    badge.style.display = 'inline-block';
+    badge.textContent = currentPhotos.length;
+  } else {
+    zone.classList.remove('has-photo');
+    hint.innerHTML = `📷 Toque para adicionar fotos do local<br><span style="font-size:11px;color:var(--text3)">JPG, PNG • múltiplas fotos permitidas</span>`;
+    badge.style.display = 'none';
+  }
+  wrap.innerHTML = currentPhotos.map((p,i) => `
+    <div class="photo-thumb">
+      <img src="${p.dataUrl}" alt="Foto ${i+1}" onclick="viewPhoto(${i})">
+      <button class="photo-thumb-del" onclick="removePhoto(${i})" title="Remover">✕</button>
+    </div>`).join('');
+}
+
+function removePhoto(index) { currentPhotos.splice(index,1); renderPhotoThumbs(); }
+
+function viewPhoto(index) {
+  const p = currentPhotos[index]; if (!p) return;
+  const w = window.open('','_blank');
+  w.document.write(`<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="${p.dataUrl}" style="max-width:100%;max-height:100vh;object-fit:contain"></body></html>`);
+  w.document.close();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'historico') renderHistory();
+  if (name === 'cadastro')  renderCadTable();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CATALOG
+// ════════════════════════════════════════════════════════════════
+function renderCatalog() {
+  const q = (document.getElementById('cat-search')||{value:''}).value.toLowerCase();
+  const tbody = document.getElementById('catalog-tbody');
+  const filtered = materials.filter(m => {
+    if (supFilter !== 'TODAS' && m.aquisicao !== supFilter) return false;
+    if (q && !m.descricao.toLowerCase().includes(q) && !m.codigo.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  tbody.innerHTML = filtered.length === 0
+    ? `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">Nenhum material encontrado</td></tr>`
+    : filtered.map(m => `
+      <tr>
+        <td><span class="code-badge">${m.codigo}</span></td>
+        <td>${m.descricao}</td>
+        <td class="c" style="color:var(--text2)">${m.unidade}</td>
+        <td class="r mono">${fmt(m.custo)}</td>
+        <td class="c"><span class="acq-badge ${m.aquisicao==='COMPRA'?'acq-compra':'acq-estoque'}">${m.aquisicao}</span></td>
+        <td class="c">
+          <button class="btn btn-sm" style="background:var(--accent-dim);color:var(--accent);border:1px solid rgba(249,115,22,.3)"
+            onclick="addItem('${m.id}')">+ Adicionar</button>
+        </td>
+      </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  BUDGET ITEMS
+// ════════════════════════════════════════════════════════════════
+function addItem(matId) {
+  const existing = budgetItems.find(it => String(it.materialId) === String(matId));
+  if (existing) { existing.qty++; }
+  else { budgetItems.push({ id: uid(), materialId: matId, qty: 1 }); }
+  renderItems(); updateStats();
+}
+
+function removeItem(id) {
+  budgetItems = budgetItems.filter(it => it.id !== id);
+  renderItems(); updateStats();
+}
+
+function changeQty(id, val) {
+  const it = budgetItems.find(it => it.id === id);
+  if (it) { it.qty = Math.max(1, parseInt(val)||1); }
+  updateStats();
+  const m = getMat(it ? it.materialId : 0);
+  if (m) {
+    const cell = document.getElementById('item-total-'+id);
+    if (cell) cell.textContent = fmt(m.custo * it.qty);
+    updateTotalRow();
+  }
+}
+
+function renderItems() {
+  const card  = document.getElementById('items-card');
+  const tbody = document.getElementById('items-tbody');
+  if (budgetItems.length === 0) { card.style.display='none'; return; }
+  card.style.display = 'block';
+  const rows = budgetItems.map(it => {
+    const m = getMat(it.materialId);
+    if (!m) return '';
+    return `
+      <tr>
+        <td><span class="code-badge">${m.codigo}</span></td>
+        <td>${m.descricao}</td>
+        <td class="c" style="color:var(--text2)">${m.unidade}</td>
+        <td class="c">
+          <input class="qty-input" type="number" min="1" value="${it.qty}"
+            onchange="changeQty('${it.id}',this.value)" oninput="changeQty('${it.id}',this.value)">
+        </td>
+        <td class="r mono">${fmt(m.custo)}</td>
+        <td class="r mono" id="item-total-${it.id}">${fmt(m.custo*it.qty)}</td>
+        <td class="c"><span class="acq-badge ${m.aquisicao==='COMPRA'?'acq-compra':'acq-estoque'}">${m.aquisicao}</span></td>
+        <td class="c">
+          <button class="btn btn-danger btn-xs" onclick="removeItem('${it.id}')">✕</button>
+        </td>
+      </tr>`;
+  }).join('');
+  tbody.innerHTML = rows + `
+    <tr class="total-row">
+      <td colspan="5">TOTAL GERAL</td>
+      <td class="r mono" id="grand-total">${fmt(calcTotal(budgetItems))}</td>
+      <td colspan="2"></td>
+    </tr>`;
+}
+
+function updateTotalRow() {
+  const el = document.getElementById('grand-total');
+  if (el) el.textContent = fmt(calcTotal(budgetItems));
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('stat-items').textContent = budgetItems.length;
+  document.getElementById('stat-total').textContent = fmt(calcTotal(budgetItems));
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SUPPLIER FILTER
+// ════════════════════════════════════════════════════════════════
+function setSup(val, btn) {
+  supFilter = val;
+  document.querySelectorAll('.sup-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCatalog();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  SAVE BUDGET
+// ════════════════════════════════════════════════════════════════
+async function saveBudget() {
+  const sol  = document.getElementById('f-solicitante').value.trim();
+  const loc  = document.getElementById('f-local').value.trim();
+  const resp = document.getElementById('f-responsavel').value.trim();
+  const email= document.getElementById('f-email').value.trim();
+
+  if (!sol || !loc || !resp) { alert('Preencha Solicitante, Local e Responsável.'); return; }
+  if (budgetItems.length === 0) { alert('Adicione ao menos um item ao orçamento.'); return; }
+
+  const codigo = editingBudget ? editingBudget.codigo : await genBudgetCodigo();
+
+  const b = {
+    id:          editingBudget ? editingBudget.id : uid(),
+    codigo,
+    version:     editingBudget ? (editingBudget.version||1)+1 : 1,
+    solicitante: sol,
+    local:       loc,
+    responsavel: resp,
+    email,
+    photos:      JSON.parse(JSON.stringify(currentPhotos)),
+    items:       JSON.parse(JSON.stringify(budgetItems)),
+    total:       calcTotal(budgetItems),
+    data:        new Date().toISOString(),
+  };
+
+  await fbSetBudget(b);  // persiste no Firestore (listener atualiza budgets[])
+  updateBadges();
+  clearForm();
+  showToast('✅ Orçamento salvo e sincronizado!');
+  document.querySelectorAll('.tab-btn')[1].click();
+}
+
+function clearForm() {
+  ['f-solicitante','f-local','f-responsavel','f-email'].forEach(id => document.getElementById(id).value='');
+  budgetItems = [];
+  currentPhotos = [];
+  renderPhotoThumbs();
+  editingBudget = null;
+  document.getElementById('edit-banner').style.display = 'none';
+  renderItems(); updateStats();
+  supFilter = 'TODAS';
+  document.querySelectorAll('.sup-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sup-todas').classList.add('active');
+  renderCatalog();
+}
+
+function cancelEdit() { clearForm(); }
+
+// ════════════════════════════════════════════════════════════════
+//  HISTORY
+// ════════════════════════════════════════════════════════════════
+function renderHistory() {
+  const s  = (document.getElementById('hf-solicitante').value||'').toLowerCase();
+  const l  = (document.getElementById('hf-local').value||'').toLowerCase();
+  const r  = (document.getElementById('hf-responsavel').value||'').toLowerCase();
+  const di = document.getElementById('hf-inicio').value;
+  const df = document.getElementById('hf-fim').value;
+
+  const list = [...budgets].sort((a,b) => new Date(b.data)-new Date(a.data)).filter(b => {
+    if (s && !b.solicitante.toLowerCase().includes(s)) return false;
+    if (l && !b.local.toLowerCase().includes(l)) return false;
+    if (r && !b.responsavel.toLowerCase().includes(r)) return false;
+    const d = new Date(b.data);
+    if (di && d < new Date(di)) return false;
+    if (df && d > new Date(df+'T23:59')) return false;
+    return true;
+  });
+
+  const container = document.getElementById('history-list');
+  if (list.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>Nenhum orçamento encontrado.</p></div>`;
+    return;
+  }
+  container.innerHTML = list.map(b => {
+    const photoCount = (b.photos||[]).length;
+    return `
+    <div class="hist-card">
+      <div class="flex-between">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+            <span style="font-weight:700;font-size:15px">${b.local}</span>
+            <span class="version-pill">v${b.version||1}</span>
+            ${b.codigo ? `<span style="font-family:'DM Mono',monospace;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:var(--accent)">${b.codigo}</span>` : ''}
+            ${photoCount > 0 ? `<span style="font-size:12px;color:var(--green)">📷 ${photoCount} foto${photoCount>1?'s':''}</span>` : ''}
+          </div>
+          <div class="hist-meta">
+            <div class="hist-meta-item">👤 <span>${b.solicitante}</span></div>
+            <div class="hist-meta-item">🔧 <span>${b.responsavel}</span></div>
+            <div class="hist-meta-item">📅 <span>${fmtDate(b.data)}</span></div>
+            <div class="hist-meta-item">📦 <span>${b.items.length} itens</span></div>
+            ${b.email ? `<div class="hist-meta-item">✉️ <span>${b.email}</span></div>` : ''}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-top:4px">
+          <div class="hist-total">${fmt(b.total)}</div>
+          <div class="hist-actions" style="margin-top:10px">
+            <button class="btn btn-ghost btn-sm" onclick="editBudget('${b.id}')">✏️ Editar</button>
+            <button class="btn btn-green btn-sm" onclick="printBudget('${b.id}')">🖨️ PDF</button>
+            <button class="btn btn-blue btn-sm" onclick="emailBudget('${b.id}')">📧 E-mail</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteBudget('${b.id}')">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function clearHistFilters() {
+  ['hf-solicitante','hf-local','hf-responsavel','hf-inicio','hf-fim'].forEach(id => document.getElementById(id).value='');
+  renderHistory();
+}
+
+function editBudget(id) {
+  const b = budgets.find(x => String(x.id) === String(id));
+  if (!b) return;
+  editingBudget = b;
+  document.getElementById('f-solicitante').value = b.solicitante;
+  document.getElementById('f-local').value       = b.local;
+  document.getElementById('f-responsavel').value = b.responsavel;
+  document.getElementById('f-email').value       = b.email||'';
+  currentPhotos = JSON.parse(JSON.stringify(b.photos||[]));
+  renderPhotoThumbs();
+  budgetItems = JSON.parse(JSON.stringify(b.items));
+  const banner = document.getElementById('edit-banner');
+  banner.style.display = 'flex';
+  document.getElementById('edit-banner-text').innerHTML =
+    `⚠️ Editando orçamento de <strong>${b.solicitante}</strong> — <strong>${b.local}</strong> (versão atual: ${b.version||1}). Ao salvar, será criada a versão ${(b.version||1)+1}.`;
+  renderItems(); updateStats();
+  document.querySelectorAll('.tab-btn')[0].click();
+}
+
+async function deleteBudget(id) {
+  if (!confirm('Excluir este orçamento?')) return;
+  await fbDeleteBudget(id);
+  updateBadges();
+  renderHistory();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  E-MAIL
+// ════════════════════════════════════════════════════════════════
+function emailBudget(id) {
+  const b = budgets.find(x => String(x.id) === String(id));
+  if (!b) return;
+  const win = buildPdfWindow(b);
+  setTimeout(() => {
+    const subject = encodeURIComponent(`Orçamento ${b.codigo||''} — ${b.local}`);
+    const body    = encodeURIComponent(`Olá,\n\nSegue em anexo o orçamento de materiais para ${b.local}.\n\nCódigo: ${b.codigo||'—'}\nTotal: ${fmt(b.total)}\nResponsável: ${b.responsavel}\n\nAtenciosamente,\nSupervisão de Automação`);
+    const to      = b.email ? encodeURIComponent(b.email) : '';
+    const pdfName = `Orcamento_${b.codigo||b.id}.pdf`;
+    showEmailGuideModal(`mailto:${to}?subject=${subject}&body=${body}`, pdfName);
+  }, 800);
+}
+
+function showEmailGuideModal(emailHref, pdfFileName) {
+  const existing = document.getElementById('email-guide-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'email-guide-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:14px;padding:24px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+        <div style="background:#f97316;border-radius:8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📧</div>
+        <div>
+          <div style="font-weight:700;font-size:15px;color:#e6edf3">Enviar Orçamento por E-mail</div>
+          <div style="font-size:12px;color:#8b949e;margin-top:2px">Siga os passos abaixo</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+        <div style="background:#21262d;border-radius:8px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:#3fb950;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px">✓</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;color:#e6edf3">Passo 1 — PDF baixado!</div>
+            <div style="font-size:12px;color:#8b949e;margin-top:3px">O arquivo <strong style="color:#f97316;font-family:monospace">${pdfFileName}</strong> foi salvo em Downloads.</div>
+          </div>
+        </div>
+        <div style="background:#21262d;border-radius:8px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:#f97316;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px">2</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;color:#e6edf3">Passo 2 — Abra o e-mail</div>
+            <div style="font-size:12px;color:#8b949e;margin-top:3px">Clique em <strong style="color:#58a6ff">Abrir E-mail</strong> abaixo.</div>
+          </div>
+        </div>
+        <div style="background:#21262d;border-radius:8px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
+          <div style="background:#f97316;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px">3</div>
+          <div>
+            <div style="font-weight:600;font-size:13px;color:#e6edf3">Passo 3 — Anexe o PDF</div>
+            <div style="font-size:12px;color:#8b949e;margin-top:3px">Toque em 📎 Anexar e selecione o arquivo em Downloads.</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('email-guide-modal').remove()" style="flex:1;padding:10px;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#8b949e;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">Fechar</button>
+        <a href="${emailHref}" onclick="setTimeout(()=>document.getElementById('email-guide-modal').remove(),300)" style="flex:2;padding:10px;background:#f97316;border:none;border-radius:8px;color:white;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">📧 Abrir E-mail</a>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PDF / PRINT
+// ════════════════════════════════════════════════════════════════
+function buildPdfWindow(b) {
+  const compra  = b.items.reduce((s,it) => { const m=getMat(it.materialId); return s+(m&&m.aquisicao==='COMPRA'?m.custo*it.qty:0); },0);
+  const estoque = b.items.reduce((s,it) => { const m=getMat(it.materialId); return s+(m&&m.aquisicao==='ESTOQUE'?m.custo*it.qty:0); },0);
+  const rows    = b.items.map(it => {
+    const m = getMat(it.materialId)||{codigo:'—',descricao:'Material não encontrado',unidade:'—',custo:0,aquisicao:'—'};
+    return `<tr>
+      <td>${m.codigo}</td><td>${m.descricao}</td>
+      <td style="text-align:center">${m.unidade}</td>
+      <td style="text-align:center">${it.qty}</td>
+      <td style="text-align:right">${fmt(m.custo)}</td>
+      <td style="text-align:right">${fmt(m.custo*it.qty)}</td>
+      <td style="text-align:center">${m.aquisicao}</td>
+    </tr>`;
+  }).join('');
+  const photos  = b.photos||[];
+  const photoSection = photos.length > 0 ? `
+    <div style="margin-top:22px">
+      <h3 style="font-size:13px;color:#555;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:6px">📷 Fotos do Local</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${photos.map((p,i)=>`
+          <div style="text-align:center">
+            <img src="${p.dataUrl}" style="width:180px;height:135px;object-fit:cover;border-radius:6px;border:1px solid #ddd">
+            <div style="font-size:10px;color:#888;margin-top:3px">Foto ${i+1}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : '';
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Orçamento — ${b.local}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#111;background:white;padding:28px;font-size:13px}
+  .logo{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  .logo-box{width:40px;height:40px;background:#f97316;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;color:white;flex-shrink:0}
+  .logo-text{font-size:16px;font-weight:700;color:#1a1a1a;line-height:1.2}
+  .logo-sub{font-size:11px;color:#666}
+  h1{font-size:17px;font-weight:700;color:#1a1a1a;margin-bottom:4px}
+  .version{font-size:12px;color:#888;margin-bottom:14px}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+  .meta-item{background:#f8f8f8;border-radius:6px;padding:8px 10px}
+  .meta-item label{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;display:block;margin-bottom:2px}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+  thead th{background:#1a1a1a;color:white;padding:8px 10px;text-align:left;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  thead th.r{text-align:right} thead th.c{text-align:center}
+  tbody td{padding:7px 10px;border-bottom:1px solid #eee}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:nth-child(even) td{background:#fafafa}
+  .total-section{margin-top:14px;display:flex;justify-content:flex-end}
+  .total-box{background:#fff4ec;border:2px solid #f97316;border-radius:8px;padding:10px 18px;min-width:260px}
+  .total-line{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px;color:#666}
+  .total-grand{display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:#f97316;border-top:1px solid #f97316;padding-top:7px;margin-top:3px}
+  .footer{margin-top:28px;font-size:10px;color:#aaa;text-align:center;border-top:1px solid #eee;padding-top:10px}
+  @media print{body{padding:14px}}
+</style></head><body>
+<div class="logo">
+  <div class="logo-box">📡</div>
+  <div>
+    <div class="logo-text">SUPERVISÃO DE AUTOMAÇÃO</div>
+    <div class="logo-sub">Sistema de Orçamentos — Redes &amp; CFTV</div>
+  </div>
+</div>
+<h1>Orçamento de Materiais</h1>
+<div class="version">Código: <strong style="color:#f97316;font-family:monospace">${b.codigo||'—'}</strong> &nbsp;·&nbsp; Versão ${b.version||1} &nbsp;·&nbsp; Emitido em ${fmtDate(b.data)}</div>
+<div class="meta">
+  <div class="meta-item"><label>Código do Orçamento</label><strong style="font-family:monospace;color:#f97316">${b.codigo||'—'}</strong></div>
+  <div class="meta-item"><label>Local / Projeto</label>${b.local}</div>
+  <div class="meta-item"><label>Solicitante</label>${b.solicitante}</div>
+  <div class="meta-item"><label>Responsável pelo Orçamento</label>${b.responsavel}</div>
+  <div class="meta-item"><label>E-mail de Envio</label>${b.email||'—'}</div>
+  <div class="meta-item"><label>Data de Emissão</label>${fmtDate(b.data)}</div>
+</div>
+<table>
+  <thead>
+    <tr>
+      <th>Código SAP</th><th>Descrição</th>
+      <th class="c">Un.</th><th class="c">Qtd</th>
+      <th class="r">Custo Unit.</th><th class="r">Total</th>
+      <th class="c">Aquisição</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="total-section">
+  <div class="total-box">
+    <div class="total-line"><span>Subtotal Compra:</span><span>${fmt(compra)}</span></div>
+    <div class="total-line"><span>Subtotal Estoque:</span><span>${fmt(estoque)}</span></div>
+    <div class="total-grand"><span>TOTAL GERAL</span><span>${fmt(b.total)}</span></div>
+  </div>
+</div>
+${photoSection}
+<div class="footer">Documento gerado pela Supervisão de Automação — Sistema de Orçamentos · Redes &amp; CFTV</div>
+</body></html>`;
+  const w = window.open('','_blank','width=900,height=700');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+  return w;
+}
+
+function printBudget(id) {
+  const b = budgets.find(x => String(x.id) === String(id));
+  if (!b) return;
+  buildPdfWindow(b);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CADASTRO DE MATERIAIS
+// ════════════════════════════════════════════════════════════════
+function renderCadTable() {
+  const q = (document.getElementById('cad-search')||{value:''}).value.toLowerCase();
+  const filtered = materials.filter(m => !q || m.descricao.toLowerCase().includes(q) || m.codigo.toLowerCase().includes(q));
+  const countEl = document.getElementById('cad-count-label');
+  if (countEl) countEl.textContent = materials.length;
+  const tbody = document.getElementById('cad-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = filtered.length === 0
+    ? `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Nenhum insumo encontrado</td></tr>`
+    : filtered.map(m => `
+      <tr>
+        <td><span class="code-badge">${m.codigo}</span></td>
+        <td>${m.descricao}</td>
+        <td class="c" style="color:var(--text2)">${m.unidade}</td>
+        <td class="r mono">${fmt(m.custo)}</td>
+        <td class="c"><span class="acq-badge ${m.aquisicao==='COMPRA'?'acq-compra':'acq-estoque'}">${m.aquisicao}</span></td>
+        <td style="color:var(--text3);font-size:12px">${m.obs||'—'}</td>
+        <td class="c">
+          <button class="btn btn-ghost btn-xs" onclick="startEditMat('${m.id}')" style="margin-right:4px">✏️</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteMat('${m.id}')">🗑️</button>
+        </td>
+      </tr>`).join('');
+}
+
+async function saveMaterial() {
+  const cod  = document.getElementById('cad-codigo').value.trim();
+  const desc = document.getElementById('cad-descricao').value.trim();
+  const un   = document.getElementById('cad-unidade').value.trim();
+  const custo= parseFloat(document.getElementById('cad-custo').value)||0;
+  const acq  = document.getElementById('cad-aquisicao').value;
+  const obs  = document.getElementById('cad-obs').value.trim();
+
+  if (!desc) { alert('Descrição é obrigatória.'); return; }
+
+  const m = {
+    id:        editingMatId || uid(),
+    codigo:    cod||'—',
+    descricao: desc,
+    unidade:   un||'PC',
+    custo,
+    aquisicao: acq,
+    obs
+  };
+
+  await fbSetMaterial(m);  // listener atualiza materials[]
+  cancelMatEdit();
+  showToast('✅ Insumo salvo e sincronizado!');
+}
+
+function startEditMat(id) {
+  const m = getMat(id);
+  if (!m) return;
+  editingMatId = id;
+  document.getElementById('cad-codigo').value    = m.codigo;
+  document.getElementById('cad-descricao').value = m.descricao;
+  document.getElementById('cad-unidade').value   = m.unidade;
+  document.getElementById('cad-custo').value     = m.custo;
+  document.getElementById('cad-aquisicao').value = m.aquisicao;
+  document.getElementById('cad-obs').value       = m.obs||'';
+  document.getElementById('cad-title').textContent = 'Editar Insumo';
+  document.getElementById('cad-cancel').style.display = 'inline-flex';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function cancelMatEdit() {
+  editingMatId = null;
+  clearCadForm();
+  document.getElementById('cad-title').textContent = 'Novo Insumo';
+  document.getElementById('cad-cancel').style.display = 'none';
+}
+
+async function deleteMat(id) {
+  if (!confirm('Excluir este insumo?')) return;
+  await fbDeleteMaterial(id);
+  showToast('🗑️ Insumo removido.');
+}
+
+function clearCadForm() {
+  ['cad-codigo','cad-descricao','cad-unidade','cad-custo','cad-obs'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('cad-aquisicao').value = 'COMPRA';
+}
+
+// ════════════════════════════════════════════════════════════════
+//  BADGES
+// ════════════════════════════════════════════════════════════════
+function updateBadges() {
+  document.getElementById('hist-count').textContent = budgets.length;
+  document.getElementById('mat-count').textContent  = materials.length;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════
+updateBadges();
+updateStats();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js?v=3').catch(function(e){console.warn('SW or:',e);});
+}
+</script>
+</body>
+</html>
