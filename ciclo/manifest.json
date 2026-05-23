@@ -1,0 +1,26 @@
+{
+  "name": "Ciclo de Vida dos Ativos",
+  "short_name": "Ciclo de Vida",
+  "description": "Ciclo de Vida dos Ativos de Automação – ArcelorMittal Mina do Andrade",
+  "id": "ciclo-vida-ativos-andrade",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#3b82f6",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "../icon_ciclo_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../icon_ciclo_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
