@@ -1,40 +1,22 @@
-/* Service Worker – 5s */
-const CACHE_NAME = 'avaliacao-5s-v2';
-const CACHE_FILES = ['./','./index.html','./manifest.json'];
+/* Service Worker – GDE v7 */
+const CACHE_NAME = 'gde-v7';
 
 self.addEventListener('install', function(e){
-  e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(c){ return c.addAll(CACHE_FILES); })
-      .then(function(){ return self.skipWaiting(); })
-  );
+  e.waitUntil(self.skipWaiting());
 });
-
 self.addEventListener('activate', function(e){
   e.waitUntil(
-    caches.keys().then(function(keys){
-      return Promise.all(
-        keys.filter(function(k){ return k !== CACHE_NAME; })
-            .map(function(k){ return caches.delete(k); })
-      );
-    }).then(function(){ return self.clients.claim(); })
+    caches.keys()
+      .then(function(keys){ return Promise.all(keys.map(function(k){ return caches.delete(k); })); })
+      .then(function(){ return self.clients.claim(); })
   );
 });
-
 self.addEventListener('fetch', function(e){
-  if (e.request.method !== 'GET') return;
-  var isHTML = e.request.mode === 'navigate' || e.request.url.endsWith('.html') || e.request.url.endsWith('/');
-  if (isHTML) {
-    e.respondWith(
-      fetch(e.request).then(function(r){
-        var clone = r.clone();
-        caches.open(CACHE_NAME).then(function(c){ c.put(e.request, clone); });
-        return r;
-      }).catch(function(){ return caches.match('./index.html'); })
-    );
-  } else {
-    e.respondWith(
-      caches.match(e.request).then(function(c){ return c || fetch(e.request); })
-    );
+  if(e.request.method!=='GET') return;
+  /* HTML: sempre da rede, nunca do cache */
+  var isHTML=e.request.mode==='navigate'||e.request.url.endsWith('.html')||e.request.url.endsWith('/');
+  if(isHTML){
+    e.respondWith(fetch(e.request,{cache:'no-store'}));
   }
+  /* demais assets: cache normal */
 });
