@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Gestão da Automação v.01</title>
+<title>Gestão da Automação — Mobile</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff6b35">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Gestão Auto v.01">
-<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="Gestão Auto Mobile">
+<link rel="apple-touch-icon" href="../icon-192.png">
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 <!-- Plus Jakarta Sans -->
@@ -19,7 +19,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -407,9 +406,10 @@ body { padding: 12px; }
 /* IAMO specific */
 .iamo-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
   padding:16px; margin-bottom:10px; }
-.iamo-tabs { display:flex; gap:4px; padding:4px; background:var(--surface-light); border-radius:var(--radius-md); margin-bottom:12px; }
-.iamo-tab { flex:1; text-align:center; font-family:"Plus Jakarta Sans",sans-serif; font-size:14px;
-  font-weight:600; padding:8px; border-radius:var(--radius-sm); cursor:pointer; color:var(--text-secondary); }
+.iamo-tabs { display:flex; gap:4px; padding:4px; background:var(--surface-light); border-radius:var(--radius-md); margin-bottom:12px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.iamo-tabs::-webkit-scrollbar { display:none; }
+.iamo-tab { flex-shrink:0; text-align:center; font-family:"Plus Jakarta Sans",sans-serif; font-size:14px;
+  font-weight:600; padding:8px 14px; border-radius:var(--radius-sm); cursor:pointer; color:var(--text-secondary); white-space:nowrap; }
 .iamo-tab.on { color:var(--primary); background:var(--surface); box-shadow:0 2px 8px rgba(0,0,0,.3); }
 .iamo-slbl { font-size:12px; color:var(--text-secondary); letter-spacing:1.5px;
   text-transform:uppercase; font-weight:700; margin-bottom:8px; }
@@ -978,6 +978,135 @@ body { padding: 12px; }
   #cfgPanel { right: 260px !important; left: 0 !important; }
 }
 
+
+/* ═══════════════════════════════════════
+   MOBILE LAYOUT — bottom nav + compact header
+═══════════════════════════════════════ */
+
+/* Hide the top horizontal tab bar on mobile */
+/* Mostra barra de abas horizontal abaixo dos alertas */
+.tabs-wrapper { display: block !important; margin-bottom: 0 !important; }
+.tabs-container {
+  display: flex !important;
+  flex-direction: row !important;
+  overflow-x: auto !important;
+  gap: 6px !important;
+  padding: 6px 4px 10px !important;
+  scrollbar-width: none;
+}
+.tabs-container::-webkit-scrollbar { display: none; }
+.tab {
+  flex-shrink: 0 !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  border-radius: 60px !important;
+  white-space: nowrap !important;
+}
+/* Esconde bottom nav — navegação agora é pela barra de abas acima */
+#bottomNav { display: none !important; }
+#pauseIndicator { display: none !important; }
+
+/* Compact header */
+.header { margin-bottom: 8px !important; flex-wrap: nowrap !important; }
+.brand h1 { font-size: 20px !important; }
+.brand span { font-size: 10px !important; }
+.time { font-size: 18px !important; }
+.date { font-size: 10px !important; }
+.avatar { width: 32px !important; height: 32px !important; font-size: 12px !important; }
+.user-name { font-size: 12px !important; }
+.user-role { display: none; }
+.mv-container { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.mv-card { padding: 10px 12px !important; }
+.mv-text { font-size: 11px !important; }
+.mv-label { font-size: 10px !important; margin-bottom: 6px !important; }
+
+/* Sem bottom nav, corpo não precisa de padding extra no fundo */
+body { padding-bottom: 16px !important; padding-top: 8px !important; }
+.content-area { min-height: calc(100vh - 220px); }
+
+/* ── BOTTOM NAVIGATION ── */
+#bottomNav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 72px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  z-index: 200;
+  -webkit-overflow-scrolling: touch;
+}
+#bottomNav::-webkit-scrollbar { display: none; }
+.bn-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 6px 8px;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.bn-tab i { font-size: 22px; }
+.bn-tab span { font-size: 11px; font-weight: 600; white-space: nowrap; }
+.bn-tab.active { color: var(--primary); }
+.bn-tab.active i { filter: drop-shadow(0 0 6px var(--primary)); }
+
+/* ── EMAIL FAB ── */
+#emailFab {
+  position: fixed;
+  bottom: 80px;
+  right: 80px;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--danger);
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(255,61,113,0.5);
+  z-index: 150;
+  transition: all 0.2s;
+}
+#emailFab:hover, #emailFab:active {
+  transform: scale(1.12);
+  box-shadow: 0 6px 28px rgba(255,61,113,0.7);
+}
+
+/* Mobile FAB adjustments — sem bottom nav */
+.fab-container { bottom: 16px !important; right: 16px !important; }
+
+/* Mobile page adjustments */
+.kpi-panel { grid-template-columns: 1fr !important; }
+.sgrid { grid-template-columns: 1fr 1fr !important; }
+.card-grid { grid-template-columns: 1fr !important; }
+.sensoGrid { grid-template-columns: 1fr 1fr !important; }
+
+/* Alerts compact */
+.alerts-section { margin-bottom: 12px; }
+.alert-bar { padding: 10px 12px; }
+
+/* Prevent desktop layout from running */
+#desktopLayoutDone { display: none; }
+
+/* Editor overlay mobile adjustments */
+.edTabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.edTab { min-width: max-content; font-size: 13px !important; padding: 8px 12px !important; }
+.edBody { padding: 12px !important; }
+
+/* Make sure pages show correctly */
+.page { display: none; }
+.page.active { display: block; }
 </style>
 
 
@@ -1002,7 +1131,7 @@ body { padding: 12px; }
     <button class="authBtn" onclick="doLogin()">▶ ENTRAR</button>
     <div class="authErr" id="authErr">Usuário ou senha incorretos</div>
     <span class="authReqLink" onclick="abrirSolicitacao()">🔑 Solicitar acesso</span>
-    <div class="authVersion">ArcelorMittal Brasil · Automação · v48</div>
+    <div class="authVersion">ArcelorMittal Brasil · Automação · Mobile</div>
   </div>
 </div>
 
@@ -1051,11 +1180,32 @@ body { padding: 12px; }
     <button class="ibDismiss" onclick="dispensarInstall()">✕</button>
   </div>
 
-  <!-- HEADER -->
+  <!-- BOTTOM NAVIGATION -->
+  <nav id="bottomNav">
+    <button class="bn-tab active" data-tab="0" onclick="bnGoTab(0)"><i class="fas fa-chart-pie"></i><span>KPIs</span></button>
+    <button class="bn-tab" data-tab="1" onclick="bnGoTab(1)"><i class="fas fa-shield-alt"></i><span>Segurança</span></button>
+    <button class="bn-tab" data-tab="2" onclick="bnGoTab(2)"><i class="fas fa-hard-hat"></i><span>EPI</span></button>
+    <button class="bn-tab" data-tab="3" onclick="bnGoTab(3)"><i class="fas fa-clipboard-list"></i><span>Ordens</span></button>
+    <button class="bn-tab" data-tab="4" onclick="bnGoTab(4)"><i class="fas fa-bolt"></i><span>Forces</span></button>
+    <button class="bn-tab" data-tab="5" onclick="bnGoTab(5)"><i class="fas fa-exclamation-circle"></i><span>Risco</span></button>
+    <button class="bn-tab" data-tab="6" onclick="bnGoTab(6)"><i class="fas fa-graduation-cap"></i><span>Treinamentos</span></button>
+    <button class="bn-tab" data-tab="7" onclick="bnGoTab(7)"><i class="fas fa-calendar-alt"></i><span>Agenda</span></button>
+    <button class="bn-tab" data-tab="8" onclick="bnGoTab(8)"><i class="fas fa-broom"></i><span>5S</span></button>
+    <button class="bn-tab" data-tab="9" onclick="bnGoTab(9)"><i class="fas fa-trophy"></i><span>Conquistas</span></button>
+    <button class="bn-tab" data-tab="10" onclick="bnGoTab(10)"><i class="fas fa-chart-line"></i><span>IAMO</span></button>
+    <button class="bn-tab" data-tab="11" onclick="bnGoTab(11)"><i class="fas fa-check-circle"></i><span>Validades</span></button>
+    <button class="bn-tab" data-tab="12" onclick="bnGoTab(12)"><i class="fas fa-tools"></i><span>Corretivas</span></button>
+    <button class="bn-tab" data-tab="13" onclick="bnGoTab(13)"><i class="fas fa-users"></i><span>Equipe</span></button>
+  </nav>
+
+  <!-- EMAIL VENCIDOS FAB -->
+  <button id="emailFab" onclick="enviarEmailVencidos()" title="Enviar e-mail com itens vencidos">
+    <i class="fas fa-envelope"></i>
+  </button>
   <header class="header">
     <div class="brand">
       <h1>Automação</h1>
-      <span>Mina do Andrade · v.01</span>
+      <span>Mina do Andrade · Mobile</span>
     </div>
     <div class="header-right">
       <div class="datetime">
@@ -1993,12 +2143,15 @@ function initFirebase(){
   try{
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     firebaseDB = firebase.database();
-    firebase.auth().signInAnonymously()
-    .then(function(){
+    /* Conexao direta — regras do banco permitem acesso publico (read/write:true).
+       NAO depende de signInAnonymously para evitar falha silenciosa de sync. */
     firebaseReady = true;
-    console.log('[GDA] Firebase conectado (auth anonima ok).');
+    console.log('[GDA] Firebase conectado (sem auth anonima).');
     var dot = document.getElementById('fbSyncDot');
     if(dot){ dot.style.opacity='0.4'; dot.title='Firebase conectado'; }
+    /* Pull inicial de dados + IAMO + listeners em tempo real */
+    /* Pull gda_data e gda_iamo de forma independente:
+       falha num não bloqueia o outro (regras podem diferir) */
     firebaseDB.ref('gda_data').once('value').then(function(snap){
       var savedData=snap.val();
       if(savedData&&typeof savedData==='object'){
@@ -2007,7 +2160,7 @@ function initFirebase(){
         reRenderAll();
       }
     }).catch(function(e){
-      console.warn('[GDA-D] Pull gda_data falhou:', e.message);
+      console.warn('[GDA] Pull gda_data falhou:', e.message);
     }).finally(function(){
       iniciarSyncFirebase();
     });
@@ -2024,14 +2177,8 @@ function initFirebase(){
         try{iamoRenderAll();}catch(e){}
       }
     }).catch(function(e){
-      console.warn('[GDA-D] Pull gda_iamo falhou:', e.message);
+      console.warn('[GDA] Pull gda_iamo falhou (auth?):', e.message);
     });
-  }).catch(function(e){
-    /* Auth anonima falhou — inicia sync sem pull inicial */
-    console.warn('[GDA] signInAnonymously falhou:', e.message);
-    firebaseReady = true;
-    iniciarSyncFirebase();
-  });
   }catch(e){
     console.warn('[GDA] Erro Firebase:', e.message);
   }
@@ -2668,7 +2815,7 @@ document.addEventListener('visibilitychange', function(){
 window.addEventListener('pagehide', _fbFlushNow);
 function deepMerge(target,saved){
   if(!saved||typeof saved!=='object')return;
-  var ALWAYS_MERGE=['iamoTeam','corretivas','calibracoes','conquistas','equipe','epi','rank','dss','risco','trein','agenda','alertas'];
+  var ALWAYS_MERGE=['iamoTeam','corretivas','calibracoes','conquistas'];
   Object.keys(saved).forEach(function(k){
     /* ALWAYS_MERGE ou array → atribuição direta */
     if(ALWAYS_MERGE.indexOf(k)>=0||Array.isArray(saved[k])){
@@ -2731,7 +2878,9 @@ function iniciarSyncFirebase(){
   if(!firebaseReady) return;
 
   /* ── Listener: dados principais ── */
+  var _fbFirstLoad=true;
   firebaseDB.ref('gda_data').on('value', function(snap){
+    if(_fbFirstLoad){ _fbFirstLoad=false; return; }
     if(_fbWriting) return;
     var saved=snap.val();
     if(!saved||typeof saved!=='object') return;
@@ -2765,7 +2914,8 @@ function iniciarSyncFirebase(){
   });
 
   /* ── Listener: 5S (senso form escreve em gda_data/senso) ── */
-  /* IMPORTANTE: NÃO usa _fbWriting aqui — auditorias vêm de dispositivo externo */
+  /* IMPORTANTE: NÃO usa _fbWriting aqui — auditorias vêm de dispositivo externo
+     e precisam ser recebidas mesmo que este app esteja gravando dados principais */
   firebaseDB.ref('gda_data/senso').on('value',function(snap){
     var saved=snap.val();
     if(!saved||typeof saved!=='object')return;
@@ -3420,7 +3570,6 @@ var TEAM_COLORS=['#ff6b35','#0095ff','#00d68f','#ffaa00','#ff3d71','#8b5cf6','#0
 function buildEqBase(){
   var el=document.getElementById('teamGrid');
   if(!el)return;
-  if(!Array.isArray(D.equipe)){D.equipe=D.equipe?Object.values(D.equipe):[];}
   el.innerHTML=D.equipe.map(function(e,i){
     var ini=e.ini||(e.nome||'').slice(0,2).toUpperCase();
     var bg=TEAM_COLORS[i%TEAM_COLORS.length];
@@ -3491,11 +3640,14 @@ function goTab(i){
   document.querySelectorAll('.tab').forEach(function(t,j){t.classList.toggle('active',i===j);});
   document.querySelectorAll('.page').forEach(function(p,j){p.classList.toggle('active',i===j);});;
   var _activeTab=document.querySelectorAll('.tab')[i]; if(_activeTab)_activeTab.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  /* Mobile: sync bottom nav highlight */
+  document.querySelectorAll('.bn-tab').forEach(function(btn){btn.classList.toggle('active',parseInt(btn.getAttribute('data-tab'))===i);});
+  var aBn=document.querySelector('.bn-tab[data-tab="'+i+'"]');if(aBn)aBn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
   if(autoOn)resetProgress();
 }
 
 /* ── AUTO-ROTATE ── */
-var autoOn=true,progressInterval=null,progressStart=null,progressDuration=15000;
+var autoOn=false,progressInterval=null,progressStart=null,progressDuration=15000;
 function getTabSpeed(){var el=document.getElementById('tabSpeedInput');return Math.max(5,Math.min(120,parseInt(el?el.value:15)||15))*1000;}
 document.getElementById('tabSpeedInput').addEventListener('change',function(){if(autoOn)resetProgress();});
 function resetProgress(){
@@ -4153,10 +4305,10 @@ function iamoCalcEmp(){
       var dv=iamoCntAbs(emp.id,r.s,r.e,["desvio"]);
       var dvSet=new Set(iamoState.absences.filter(function(a){return a.empId===emp.id&&a.type==="desvio";}).reduce(function(acc,a){return acc.concat(iamoGetWDs(a.s,a.e).filter(function(d){return d>=r.s&&d<=r.e;}));},[]));
       var wd2=wd-dv;
-      var tot=wd2*6.5,av=Math.max(0,(wd2-(fe+af+fo)-tr)*6.5);
+      var tot=wd2*8,av=Math.max(0,(wd2-(fe+af+fo)-tr)*8);
       var wdSet=new Set(iamoGetWDs(r.s,r.e));
       var pr=iamoState.tasks.filter(function(t){return t.empId===emp.id&&t.date>=r.s&&t.date<=r.e&&wdSet.has(t.date)&&!dvSet.has(t.date);}).reduce(function(s,t){return s+t.minutes/60;},0);
-      return{totH:tot,absH:af*6.5,feH:fe*6.5,foH:fo*6.5,trH:tr*6.5,dvH:dv*6.5,avH:av,prH:pr,iamo:iamoPct(pr,av)};
+      return{totH:tot,absH:af*8,feH:fe*8,foH:fo*8,trH:tr*8,dvH:dv*8,avH:av,prH:pr,iamo:iamoPct(pr,av)};
     }
     return Object.assign({},emp,{m:calc(mr,mWD),y:calc(yr,yWD)});
   });
@@ -4669,7 +4821,7 @@ function iamoAbrirModal(){
   IAMO_ABS.forEach(function(t){var b=document.createElement('button');b.style.cssText='font-size:22px;padding:4px 8px;border-radius:4px;cursor:pointer;border:1px solid '+(iamoState.formType===t.key?t.cor:'var(--brd)')+';background:'+(iamoState.formType===t.key?t.cor+'22':'#060c1b')+';color:'+(iamoState.formType===t.key?t.cor:'var(--mt)')+';';b.textContent=t.label;b.onclick=function(){iamoState.formType=t.key;iamoAbrirModal();};tg.appendChild(b);});
   document.getElementById('iamoAbsModal').style.display='block';
 }
-function iamoCalcDias(){var s=document.getElementById('iamoFIni').value,e=document.getElementById('iamoFFim').value,el=document.getElementById('iamoDDias');if(s&&e&&s<=e){var wds=iamoGetWDs(s,e).length;el.textContent='📅 '+wds+' dias úteis · '+(wds*6.5)+'h';el.style.display='block';}else el.style.display='none';}
+function iamoCalcDias(){var s=document.getElementById('iamoFIni').value,e=document.getElementById('iamoFFim').value,el=document.getElementById('iamoDDias');if(s&&e&&s<=e){var wds=iamoGetWDs(s,e).length;el.textContent='📅 '+wds+' dias úteis · '+wds*8+'h';el.style.display='block';}else el.style.display='none';}
 function iamoSalvarAusencia(){
   var empId=document.getElementById('iamoFEmp').value;
   var s=document.getElementById('iamoFIni').value;
@@ -4792,7 +4944,6 @@ initFirebase();
    apos a autenticacao anonima ser concluida */
 hookEdGoTab();
 checkSession();
-reRenderAll(); /* render inicial — colocado AQUI pois TEAM_COLORS e demais vars só estão prontos após toda a inicialização */
 
 /* ── NEW LAYOUT: Tab click via data-tab ── */
 (function(){
@@ -4876,13 +5027,114 @@ window.addEventListener('appinstalled', function(){
   toast('✅ App instalado na tela inicial!', true);
 });
 
+/* ══ MOBILE: Bottom Nav Navigation ══ */
+function bnGoTab(i) {
+  /* Update bottom nav active state */
+  document.querySelectorAll('.bn-tab').forEach(function(btn) {
+    btn.classList.toggle('active', parseInt(btn.getAttribute('data-tab')) === i);
+  });
+  /* Scroll active tab into view in bottom nav */
+  var activeBtn = document.querySelector('.bn-tab[data-tab="' + i + '"]');
+  if (activeBtn) {
+    activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+  /* Reuse goTab for content */
+  currentTab = i;
+  document.querySelectorAll('.tab').forEach(function(t, j) { t.classList.toggle('active', i === j); });
+  document.querySelectorAll('.page').forEach(function(p, j) { p.classList.toggle('active', i === j); });
+}
+
+/* ══ ENVIAR E-MAIL COM ITENS VENCIDOS ══ */
+function enviarEmailVencidos() {
+  var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  var vencidos = [];
+
+  /* SIG vencidos */
+  D.alertas.forEach(function(a) {
+    var d = diasAte(a.venc);
+    if (d !== null && d < 0) {
+      vencidos.push({ tipo: a.t, desc: a.x, venc: a.venc, dias: Math.abs(d) });
+    }
+  });
+  /* Treinamentos vencidos */
+  D.trein.forEach(function(t) {
+    var d = diasAte(t.venc);
+    if (d !== null && d < 0) {
+      vencidos.push({ tipo: 'TREIN', desc: t.n + ' – ' + t.p, venc: t.venc, dias: Math.abs(d) });
+    }
+  });
+  /* EPI vencidos */
+  D.epi.forEach(function(e) {
+    var pTroca = e.proximaTroca || calcProximaTroca(e.desc, e.dataEntrega);
+    [
+      { dt: e.validEpi, lbl: 'EPI Val.EPI' },
+      { dt: e.validCa, lbl: 'EPI Val.CA' },
+      { dt: pTroca, lbl: 'EPI Prx.Troca' }
+    ].forEach(function(v) {
+      if (!v.dt) return;
+      var d = diasAte(v.dt);
+      if (d !== null && d < 0) {
+        vencidos.push({ tipo: v.lbl, desc: e.desc + ' (' + e.pessoa + ')', venc: v.dt, dias: Math.abs(d) });
+      }
+    });
+  });
+  /* Procedimentos vencidos */
+  (D.procedimentos || []).forEach(function(p) {
+    var d = diasAte(p.dataVenc);
+    if (d !== null && d < 0) {
+      vencidos.push({ tipo: 'PROC', desc: p.codigo + ' – ' + p.descricao, venc: p.dataVenc, dias: Math.abs(d) });
+    }
+  });
+  /* Calibrações vencidas */
+  (D.calibracoes || []).forEach(function(c) {
+    var d = diasAte(c.dataVenc);
+    if (d !== null && d < 0) {
+      vencidos.push({ tipo: 'CAL', desc: c.ferramenta + ' (' + c.disciplina + ')', venc: c.dataVenc, dias: Math.abs(d) });
+    }
+  });
+  /* Riscos vencidos */
+  D.risco.forEach(function(r) {
+    if (!r.data) return;
+    var d = diasAte(r.data);
+    if (d !== null && d < 0) {
+      vencidos.push({ tipo: 'RISCO', desc: '[' + r.disc + '] ' + r.desc, venc: r.data, dias: Math.abs(d) });
+    }
+  });
+
+  vencidos.sort(function(a, b) { return b.dias - a.dias; });
+
+  if (!vencidos.length) {
+    toast('✅ Nenhum item vencido no momento!', true);
+    return;
+  }
+
+  var dataHoje = hoje.toLocaleDateString('pt-BR');
+  var linhas = vencidos.map(function(v) {
+    return '[' + v.tipo + '] ' + v.desc + '\n   Vencimento: ' + v.venc + ' | Vencido há ' + v.dias + ' dia(s)';
+  }).join('\n\n');
+
+  var assunto = encodeURIComponent('⚠ Itens Vencidos – Supervisão Automação – ' + dataHoje);
+  var corpo = encodeURIComponent(
+    'Prezado Thalles,\n\n' +
+    'Seguem os itens com validade vencida em ' + dataHoje + ' (' + vencidos.length + ' item(ns)):\n\n' +
+    '═══════════════════════════════════\n\n' +
+    linhas + '\n\n' +
+    '═══════════════════════════════════\n\n' +
+    'Enviado automaticamente pelo app Gestão da Automação – Mobile\n' +
+    'ArcelorMittal Brasil · Mina do Andrade · Supervisão de Automação'
+  );
+
+  window.location.href = 'mailto:' + ADMIN_EMAIL + '?subject=' + assunto + '&body=' + corpo;
+  toast('📧 Abrindo e-mail com ' + vencidos.length + ' item(ns) vencido(s)...', true);
+}
+
 /* ══ SERVICE WORKER ══ */
 if('serviceWorker' in navigator){
   /* Desregistra SWs antigos e registra o novo — garante atualização */
   navigator.serviceWorker.getRegistrations().then(function(regs){
     regs.forEach(function(r){ r.unregister(); });
   }).finally(function(){
-    navigator.serviceWorker.register('sw.js?v=01').catch(function(e){
+    navigator.serviceWorker.register('./sw.js?v=3').catch(function(e){
       console.warn('SW não registrado:',e);
     });
   });
@@ -4898,7 +5150,8 @@ if('serviceWorker' in navigator){
    Runs once; no-ops on mobile (< 1600px)
 ═══════════════════════════════════════════════════════ */
 (function initDesktopLayout() {
-  if (window.innerWidth < 1600) return;
+  /* DISABLED in mobile version */
+  return;
 
   var app     = document.querySelector('.app');
   var tabsW   = document.querySelector('.tabs-wrapper');
